@@ -1,6 +1,7 @@
 /* 路由與啟動 */
 (function (root) {
   'use strict';
+  const t = (s, p) => root.HRD.i18n.t(s, p);
   const HRD = root.HRD;
   const { h, icon, dialog } = HRD.ui;
 
@@ -9,7 +10,7 @@
   let current = null;
   let ignoreHash = null;
 
-  HRD.VERSION = '0.6.0';
+  HRD.VERSION = '0.7.0';
 
   const app = {
     state: {},
@@ -55,7 +56,7 @@
     },
 
     dots(n) {
-      const box = h('span', { class: 'dots', role: 'img', 'aria-label': n ? '難度 ' + n + '（滿分 5）' : '難度未定' });
+      const box = h('span', { class: 'dots', role: 'img', 'aria-label': n ? t('難度 {n}（滿分 5）', { n }) : t('難度未定') });
       for (let i = 1; i <= 5; i++) box.appendChild(h('span', { class: 'dot' + (n && i <= n ? ' on' : '') }));
       return box;
     },
@@ -91,7 +92,7 @@
 
   function notFound(message) {
     main.appendChild(h('div', { class: 'page' },
-      h('div', { class: 'empty' }, h('h1', {}, message), h('div', { class: 'btn-row' }, h('a', { class: 'btn btn-primary', href: '#/' }, '回到首頁')))));
+      h('div', { class: 'empty' }, h('h1', {}, message), h('div', { class: 'btn-row' }, h('a', { class: 'btn btn-primary', href: '#/' }, t('回到首頁'))))));
   }
 
   function mount(hash, soft) {
@@ -100,22 +101,22 @@
     main.textContent = '';
     const r = parse(hash);
     let result = null;
-    let title = '華容道';
+    let title = t('華容道');
     if (r.view === 'home') result = HRD.views.home(main, { app: app });
-    else if (r.view === 'mine') { result = HRD.views.mine(main, { app: app }); title = '我的關卡 · 華容道'; }
-    else if (r.view === 'settings') { result = HRD.views.settings(main, { app: app }); title = '設定 · 華容道'; }
-    else if (r.view === 'gallery') { result = HRD.views.gallery(main, { app: app }); title = '關卡廣場 · 華容道'; }
-    else if (r.view === 'ranking') { result = HRD.views.ranking(main, { app: app, levelId: r.levelId }); title = '排行榜 · 華容道'; }
-    else if (r.view === 'galleryLevel') { result = HRD.views.galleryLevel(main, { app: app, id: r.id }); title = '關卡廣場 · 華容道'; }
-    else if (r.view === 'shared') { result = HRD.views.shared(main, { app: app, code: r.code, challenge: r.challenge }); title = '朋友分享的關卡 · 華容道'; }
-    else if (r.view === 'editor') { result = HRD.views.editor(main, { app: app, id: r.id }); title = '關卡編輯器 · 華容道'; }
+    else if (r.view === 'mine') { result = HRD.views.mine(main, { app: app }); title = t('我的關卡 · 華容道'); }
+    else if (r.view === 'settings') { result = HRD.views.settings(main, { app: app }); title = t('設定 · 華容道'); }
+    else if (r.view === 'gallery') { result = HRD.views.gallery(main, { app: app }); title = t('關卡廣場 · 華容道'); }
+    else if (r.view === 'ranking') { result = HRD.views.ranking(main, { app: app, levelId: r.levelId }); title = t('排行榜 · 華容道'); }
+    else if (r.view === 'galleryLevel') { result = HRD.views.galleryLevel(main, { app: app, id: r.id }); title = t('關卡廣場 · 華容道'); }
+    else if (r.view === 'shared') { result = HRD.views.shared(main, { app: app, code: r.code, challenge: r.challenge }); title = t('朋友分享的關卡 · 華容道'); }
+    else if (r.view === 'editor') { result = HRD.views.editor(main, { app: app, id: r.id }); title = t('關卡編輯器 · 華容道'); }
     else if (r.view === 'play') {
       const info = app.resolve(r.key);
       if (!info && r.key.startsWith('p:')) result = loadPublic(hash, r.key.slice(2));
-      else if (!info) notFound(r.key === 'draft' ? '沒有正在試玩的關卡' : '找不到這個關卡');
+      else if (!info) notFound(r.key === 'draft' ? t('沒有正在試玩的關卡') : t('找不到這個關卡'));
       else {
         result = HRD.views.play(main, Object.assign({ app: app, challenge: r.challenge }, info));
-        title = info.level.name + ' · 華容道';
+        title = t('{name} · 華容道', { name: info.level.name });
       }
     }
     current = typeof result === 'function' ? { unmount: result } : result || {};
@@ -129,7 +130,7 @@
   /* 關卡廣場的關卡第一次在這台裝置打開：先從雲端抓下來再進遊戲 */
   function loadPublic(hash, id) {
     let alive = true;
-    const box = h('div', { class: 'page' }, h('p', { class: 'empty-line', role: 'status' }, '載入關卡中…'));
+    const box = h('div', { class: 'page' }, h('p', { class: 'empty-line', role: 'status' }, t('載入關卡中…')));
     main.appendChild(box);
     HRD.cloud.ready()
       .then(() => (HRD.gallery.available() ? HRD.gallery.get(id) : null))
@@ -137,11 +138,11 @@
         if (!alive) return;
         if (x) { mount(hash, true); return; }
         box.remove();
-        notFound('找不到這個關卡');
+        notFound(t('找不到這個關卡'));
       }, (e) => {
         if (!alive) return;
         box.remove();
-        notFound('關卡載入失敗：' + HRD.gallery.errorText(e));
+        notFound(t('關卡載入失敗：{errorText}', { errorText: HRD.gallery.errorText(e) }));
       });
     return () => { alive = false; };
   }
@@ -150,9 +151,9 @@
     if (hash === currentHash) { if (!fromHashChange) mount(hash); return; }
     const g = current && current.guard ? current.guard(hash) : null;
     if (g) {
-      const actions = [{ label: '留在這裡', value: 'stay' }, { label: '不儲存就離開', value: 'leave', danger: true }];
-      if (g.save) actions.push({ label: '儲存後離開', value: 'save', primary: true });
-      const choice = await dialog({ title: '要離開這一頁嗎？', message: g.message, actions: actions });
+      const actions = [{ label: t('留在這裡'), value: 'stay' }, { label: t('不儲存就離開'), value: 'leave', danger: true }];
+      if (g.save) actions.push({ label: t('儲存後離開'), value: 'save', primary: true });
+      const choice = await dialog({ title: t('要離開這一頁嗎？'), message: g.message, actions: actions });
       if (choice === 'save' && !g.save()) { restoreHash(); return; }
       if (choice !== 'save' && choice !== 'leave') { restoreHash(); return; }
     }
@@ -190,10 +191,10 @@
     if (!el) return;
     const acc = HRD.store.account();
     const mode = HRD.store.mode();
-    el.textContent = acc ? '已登入「' + acc.name + '」，關卡與進度會同步到你的帳號。'
-      : mode === 'cloud' ? '關卡與進度已存到你的帳號，只有你看得到。'
-      : mode === 'local' ? '關卡與進度存在這個瀏覽器。'
-      : '這個分頁無法使用瀏覽器儲存空間，關閉後進度不會保留；請記得匯出關卡。';
+    el.textContent = acc ? t('已登入「{name}」，關卡與進度會同步到你的帳號。', { name: acc.name })
+      : mode === 'cloud' ? t('關卡與進度已存到你的帳號，只有你看得到。')
+      : mode === 'local' ? t('關卡與進度存在這個瀏覽器。')
+      : t('這個分頁無法使用瀏覽器儲存空間，關閉後進度不會保留；請記得匯出關卡。');
   }
 
   /* 右上角：登入後設定鈕換成頭像；可以登入但還沒登入時，旁邊多一個「登入」 */
@@ -214,9 +215,36 @@
     link.textContent = '';
     link.classList.toggle('has-avatar', !!acc);
     link.appendChild(acc ? HRD.cloud.avatar(acc, 36) : icon('sliders', 20));
-    const label = acc ? '設定與帳號（' + acc.name + '）' : '設定';
+    const label = acc ? t('設定與帳號（{name}）', { name: acc.name }) : t('設定');
     link.setAttribute('aria-label', label);
     link.title = label;
+  }
+
+  /* 頁尾的語言切換（看不懂目前的語言時也找得到） */
+  function updateLangLinks() {
+    const box = document.getElementById('lang-links');
+    if (!box) return;
+    box.textContent = '';
+    const now = HRD.i18n.locale();
+    HRD.i18n.LOCALES.forEach((l, i) => {
+      if (i) box.appendChild(document.createTextNode(' · '));
+      box.appendChild(h('button', {
+        type: 'button', class: 'text-btn lang-link', lang: l.html, 'aria-pressed': l.id === now ? 'true' : 'false',
+        onclick: () => HRD.settings.set('lang', l.id),
+      }, l.name));
+    });
+  }
+
+  /* 換語言：頁面骨架、頁首頁尾和目前的畫面都重畫 */
+  function applyLanguage() {
+    if (!HRD.i18n.use(HRD.settings.get('lang'))) return false;
+    HRD.i18n.applyStatic();
+    headerSig = null;
+    updateHeader();
+    updateFooter();
+    updateLangLinks();
+    if (currentHash) mount(currentHash, true);
+    return true;
   }
 
   function softRefresh() {
@@ -225,8 +253,12 @@
 
   function start(data) {
     HRD.store.init();
+    HRD.i18n.use(HRD.settings.get('lang'));
+    HRD.i18n.applyStatic();
+    updateLangLinks();
     HRD.settings.apply();
     HRD.store.onChange(() => {
+      if (applyLanguage()) return;
       updateFooter();
       updateHeader();
       HRD.settings.apply();

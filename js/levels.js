@@ -7,14 +7,16 @@
 (function (root) {
   'use strict';
   const E = root.HRD && root.HRD.engine ? root.HRD.engine : require('./engine.js');
+  /* 分類名稱、關卡名稱和說明跟著語言翻譯（js/i18n.js）；Node 裡直接用原文 */
+  const tr = (s) => (root.HRD && root.HRD.i18n ? root.HRD.i18n.t(s) : s);
 
   const CATEGORIES = [
-    { id: 'beginner', name: '入門' },
-    { id: 'advanced', name: '進階' },
-    { id: 'classic', name: '經典' },
-    { id: 'world', name: '海外' },
-    { id: 'variant', name: '變化' },
-    { id: 'challenge', name: '挑戰' },
+    { id: 'beginner', get name() { return tr('入門'); } },
+    { id: 'advanced', get name() { return tr('進階'); } },
+    { id: 'classic', get name() { return tr('經典'); } },
+    { id: 'world', get name() { return tr('海外'); } },
+    { id: 'variant', get name() { return tr('變化'); } },
+    { id: 'challenge', get name() { return tr('挑戰'); } },
   ];
 
   const HDLM_NAMES = { A: '張飛', B: '趙雲', C: '曹操', D: '馬超', E: '關羽', F: '黃忠' };
@@ -367,10 +369,11 @@
     const st = E.fromGrid(r.grid, labels, r.exit);
     return {
       id: r.id,
-      name: r.name,
+      // 名稱和說明顯示時才翻譯（換語言不用重新載入）；複製這個物件會拿到當時語言的文字
+      get name() { return tr(r.name); },
       category: r.category,
       difficulty: E.difficultyFor(r.minMoves),
-      description: r.description,
+      get description() { return tr(r.description); },
       board: { cols: st.cols, rows: st.rows },
       exit: { side: st.exit.side, at: st.exit.at },
       goal: { x: st.goal.x, y: st.goal.y },

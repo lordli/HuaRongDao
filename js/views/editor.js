@@ -1,6 +1,7 @@
 /* 關卡編輯器 */
 (function (root) {
   'use strict';
+  const t = (s, p) => root.HRD.i18n.t(s, p);
   const HRD = root.HRD;
   const E = HRD.engine;
   const { h, icon, toast, confirmDialog } = HRD.ui;
@@ -23,8 +24,8 @@
       const l = HRD.store.customLevel(routeId);
       if (!l) {
         container.appendChild(h('div', { class: 'page' },
-          h('div', { class: 'empty' }, h('h1', {}, '找不到這個關卡'), h('p', {}, '它可能已經被刪除了。'),
-            h('div', { class: 'btn-row' }, h('a', { class: 'btn btn-primary', href: '#/mine' }, '回我的關卡')))));
+          h('div', { class: 'empty' }, h('h1', {}, t('找不到這個關卡')), h('p', {}, t('它可能已經被刪除了。')),
+            h('div', { class: 'btn-row' }, h('a', { class: 'btn btn-primary', href: '#/mine' }, t('回我的關卡'))))));
         return null;
       }
       levelId = l.id;
@@ -66,18 +67,18 @@
       setBoard(st.cols, st.rows, st.exit, pieces);
     }
     function fits(type, x, y, ignore) {
-      const t = E.TYPES[type];
-      if (x < 0 || y < 0 || x + t.w > st.cols || y + t.h > st.rows) return false;
+      const tt = E.TYPES[type];
+      if (x < 0 || y < 0 || x + tt.w > st.cols || y + tt.h > st.rows) return false;
       for (let i = 0; i < st.pieces.length; i++) {
         if (i === ignore) continue;
         const p = st.pieces[i];
-        if (x < p.x + p.w && p.x < x + t.w && y < p.y + p.h && p.y < y + t.h) return false;
+        if (x < p.x + p.w && p.x < x + tt.w && y < p.y + p.h && p.y < y + tt.h) return false;
       }
       return true;
     }
     function clampAnchor(type, x, y) {
-      const t = E.TYPES[type];
-      return { x: Math.min(x, st.cols - t.w), y: Math.min(y, st.rows - t.h) };
+      const tt = E.TYPES[type];
+      return { x: Math.min(x, st.cols - tt.w), y: Math.min(y, st.rows - tt.h) };
     }
     function suggestLabel(type) {
       if (type === 'king') return '曹操';
@@ -92,9 +93,9 @@
 
     /* ---------- 編輯動作 ---------- */
     function placeAt(x, y) {
-      if (placeType === 'king' && kingCount() >= 1) { toast('曹操只能有一個，先刪掉原本的曹操再放'); return false; }
+      if (placeType === 'king' && kingCount() >= 1) { toast(t('曹操只能有一個，先刪掉原本的曹操再放')); return false; }
       const a = clampAnchor(placeType, x, y);
-      if (!fits(placeType, a.x, a.y, null)) { toast('這裡放不下' + E.TYPES[placeType].name); return false; }
+      if (!fits(placeType, a.x, a.y, null)) { toast(t('這裡放不下{name}', { name: E.TYPES[placeType].name })); return false; }
       pushUndo();
       setPieces(st.pieces.concat([E.makePiece(placeType, a.x, a.y, nextLabel || null)]));
       HRD.fx.place(placeType);
@@ -114,7 +115,7 @@
       sel = null;
       refreshLabel();
       render();
-      toast('已刪除「' + name + '」');
+      toast(t('已刪除「{name}」', { name }));
     }
     function movePiece(i, x, y) {
       pushUndo();
@@ -142,7 +143,7 @@
     }
     async function clearAll() {
       if (!st.pieces.length) return;
-      const ok = await confirmDialog('清空盤面？', '所有棋子都會被移除，之後可以按「復原」找回來。', '清空', true);
+      const ok = await confirmDialog(t('清空盤面？'), t('所有棋子都會被移除，之後可以按「復原」找回來。'), t('清空'), true);
       if (!ok) return;
       pushUndo();
       setPieces([]);
@@ -153,13 +154,13 @@
       const tpl = HRD.levels.LEVELS.find((l) => l.id === levelIdToLoad);
       if (!tpl) return;
       if (st.pieces.length) {
-        const ok = await confirmDialog('換成「' + tpl.name + '」的盤面？', '目前盤面上的棋子會被取代，之後可以按「復原」找回來。', '換成這個盤面');
+        const ok = await confirmDialog(t('換成「{name}」的盤面？', { name: tpl.name }), t('目前盤面上的棋子會被取代，之後可以按「復原」找回來。'), t('換成這個盤面'));
         if (!ok) { templateSelect.value = ''; return; }
       }
       pushUndo();
       const tst = E.levelToState(tpl);
       setBoard(tst.cols, tst.rows, tst.exit, tst.pieces);
-      if (!meta.name) { meta.name = tpl.name + ' 改編'; nameInput.value = meta.name; }
+      if (!meta.name) { meta.name = t('{name} 改編', { name: tpl.name }); nameInput.value = meta.name; }
       sel = null; tool = 'select';
       templateSelect.value = '';
       render();
@@ -223,10 +224,10 @@
         nameError.hidden = false;
         nameInput.setAttribute('aria-invalid', 'true');
         nameInput.focus();
-        toast('請先幫關卡取個名字');
+        toast(t('請先幫關卡取個名字'));
         return false;
       }
-      if (!v.ok) { toast('還不能儲存：' + v.errors[0]); return false; }
+      if (!v.ok) { toast(t('還不能儲存：{errors}', { errors: t(v.errors[0]) })); return false; }
       const level = buildLevel();
       if (!levelId) level.name = HRD.store.uniqueName(level.name);
       const saved = HRD.store.saveLevel(level);
@@ -234,7 +235,7 @@
       levelId = saved.id;
       dirty = false;
       meta.name = saved.name; nameInput.value = saved.name;
-      toast('已儲存「' + saved.name + '」');
+      toast(t('已儲存「{name}」', { name: saved.name }));
       if (wasNew) app.replace('#/edit/' + saved.id);
       if (saved.solvable == null && !saved.solveStatus) {
         if (check.status === 'running') { /* 算完時 runCheck 會寫回 */ } else HRD.io.verifyPending();
@@ -244,17 +245,17 @@
     }
     function shareCurrent() {
       const v = E.validate(st);
-      if (!v.ok) { toast('還不能分享：' + v.errors[0]); return; }
+      if (!v.ok) { toast(t('還不能分享：{errors}', { errors: t(v.errors[0]) })); return; }
       const level = buildLevel();
-      level.name = meta.name.trim() || '未命名關卡';
+      level.name = meta.name.trim() || t('未命名關卡');
       HRD.io.shareDialog(level);
     }
 
     function testPlay() {
       const v = E.validate(st);
-      if (!v.ok) { toast('還不能試玩：' + v.errors[0]); return; }
+      if (!v.ok) { toast(t('還不能試玩：{errors}', { errors: t(v.errors[0]) })); return; }
       const level = buildLevel();
-      level.name = meta.name.trim() || '未命名關卡';
+      level.name = meta.name.trim() || t('未命名關卡');
       app.draft = {
         editId: levelId || 'new', levelId: levelId, st: st, meta: Object.assign({}, meta), dirty: dirty,
         undo: undoStack, redo: redoStack, level: level,
@@ -266,37 +267,37 @@
     /* ---------- 畫面 ---------- */
     const board = new HRD.BoardView({ kind: 'edit' });
     board.bed.tabIndex = 0;
-    board.bed.setAttribute('aria-label', '編輯中的盤面。放置模式下可用方向鍵移動游標，按 Enter 放下棋子。');
+    board.bed.setAttribute('aria-label', t('編輯中的盤面。放置模式下可用方向鍵移動游標，按 Enter 放下棋子。'));
 
     const saveState = h('p', { class: 'save-state', 'aria-live': 'polite' });
-    const undoBtn = h('button', { type: 'button', class: 'icon-btn', 'aria-label': '復原', onclick: undo }, icon('undo', 20));
-    const redoBtn = h('button', { type: 'button', class: 'icon-btn', 'aria-label': '重做', onclick: redo }, icon('redo', 20));
+    const undoBtn = h('button', { type: 'button', class: 'icon-btn', 'aria-label': t('復原'), onclick: undo }, icon('undo', 20));
+    const redoBtn = h('button', { type: 'button', class: 'icon-btn', 'aria-label': t('重做'), onclick: redo }, icon('redo', 20));
 
     const paletteBtns = {};
     const palette = h('div', { class: 'palette' });
     PALETTE.forEach((type) => {
-      const t = E.TYPES[type];
+      const tt = E.TYPES[type];
       const count = h('span', { class: 'tile-sub' });
       const b = h('button', {
         type: 'button', class: 'tile-btn',
         onclick: () => { tool = 'place'; placeType = type; sel = null; labelTouched = false; refreshLabel(); render(); },
-      }, h('span', { class: 'shape shape-' + type, 'aria-hidden': 'true' }), h('span', { class: 'tile-text' }, h('span', { class: 'tile-name' }, t.name + ' ' + t.w + ' × ' + t.h), count));
+      }, h('span', { class: 'shape shape-' + type, 'aria-hidden': 'true' }), h('span', { class: 'tile-text' }, h('span', { class: 'tile-name' }, tt.name + ' ' + tt.w + ' × ' + tt.h), count));
       paletteBtns[type] = { button: b, count: count };
       palette.appendChild(b);
     });
 
     const toolBtn = (name, label, onClick) => h('button', { type: 'button', class: 'btn btn-tool btn-tool-row', onclick: onClick }, icon(name, 18), h('span', {}, label));
-    const selectBtn = toolBtn('pointer', '選取／移動', () => { tool = 'select'; ghost = null; render(); });
-    const eraseBtn = toolBtn('eraser', '刪除', () => { tool = 'erase'; sel = null; ghost = null; render(); });
-    const flipBtn = toolBtn('flip', '左右翻轉', flip);
-    const clearBtn = toolBtn('trash', '清空盤面', clearAll);
+    const selectBtn = toolBtn('pointer', t('選取／移動'), () => { tool = 'select'; ghost = null; render(); });
+    const eraseBtn = toolBtn('eraser', t('刪除'), () => { tool = 'erase'; sel = null; ghost = null; render(); });
+    const flipBtn = toolBtn('flip', t('左右翻轉'), flip);
+    const clearBtn = toolBtn('trash', t('清空盤面'), clearAll);
     clearBtn.classList.add('btn-tool-danger');
 
     const pieceTitle = h('h2', { class: 'card-title' });
     const pieceDesc = h('p', { class: 'hint-text' });
     const labelInput = h('input', { id: 'piece-label', type: 'text', class: 'input', maxlength: '6', autocomplete: 'off' });
-    const labelField = h('div', { class: 'field' }, h('label', { class: 'field-label', for: 'piece-label' }, '棋子文字'), labelInput);
-    const deleteBtn = h('button', { type: 'button', class: 'btn btn-secondary btn-sm btn-danger-text', onclick: () => removePiece(sel) }, icon('trash', 16), '刪除這顆棋子');
+    const labelField = h('div', { class: 'field' }, h('label', { class: 'field-label', for: 'piece-label' }, t('棋子文字')), labelInput);
+    const deleteBtn = h('button', { type: 'button', class: 'btn btn-secondary btn-sm btn-danger-text', onclick: () => removePiece(sel) }, icon('trash', 16), t('刪除這顆棋子'));
     let labelUndoPushed = false;
     labelInput.addEventListener('focus', () => { labelUndoPushed = false; });
     labelInput.addEventListener('input', () => {
@@ -313,34 +314,34 @@
       }
     });
 
-    const nameInput = h('input', { id: 'lv-name', type: 'text', class: 'input', maxlength: '30', value: meta.name, placeholder: '例如：我的第一關', autocomplete: 'off', 'aria-describedby': 'lv-name-error' });
-    const nameError = h('p', { id: 'lv-name-error', class: 'field-error', hidden: true }, '請輸入關卡名稱');
+    const nameInput = h('input', { id: 'lv-name', type: 'text', class: 'input', maxlength: '30', value: meta.name, placeholder: t('例如：我的第一關'), autocomplete: 'off', 'aria-describedby': 'lv-name-error' });
+    const nameError = h('p', { id: 'lv-name-error', class: 'field-error', hidden: true }, t('請輸入關卡名稱'));
     nameInput.addEventListener('input', () => {
       meta.name = nameInput.value; dirty = true;
       if (meta.name.trim()) { nameError.hidden = true; nameInput.removeAttribute('aria-invalid'); }
       renderMeta();
     });
     const diffSelect = h('select', { id: 'lv-diff', class: 'input' },
-      h('option', { value: '' }, '依最少步數自動判定'),
-      [1, 2, 3, 4, 5].map((n) => h('option', { value: String(n) }, n + ' 顆點')));
+      h('option', { value: '' }, t('依最少步數自動判定')),
+      [1, 2, 3, 4, 5].map((n) => h('option', { value: String(n) }, t('{n} 顆點', { n }))));
     diffSelect.value = meta.difficulty ? String(meta.difficulty) : '';
     diffSelect.addEventListener('change', () => { meta.difficulty = diffSelect.value ? Number(diffSelect.value) : null; dirty = true; renderMeta(); });
-    const descInput = h('textarea', { id: 'lv-desc', class: 'input', rows: 3, maxlength: '200', placeholder: '給挑戰者的一句話（可不填）' });
+    const descInput = h('textarea', { id: 'lv-desc', class: 'input', rows: 3, maxlength: '200', placeholder: t('給挑戰者的一句話（可不填）') });
     descInput.value = meta.description;
     descInput.addEventListener('input', () => { meta.description = descInput.value; dirty = true; renderMeta(); });
 
     const templateSelect = h('select', { id: 'lv-template', class: 'input' },
-      h('option', { value: '' }, '選擇內建關卡…'),
-      HRD.levels.LEVELS.map((l) => h('option', { value: l.id }, l.name + '（最少 ' + l.minMoves + ' 步）')));
+      h('option', { value: '' }, t('選擇內建關卡…')),
+      HRD.levels.LEVELS.map((l) => h('option', { value: l.id }, t('{name}（最少 {minMoves} 步）', { name: l.name, minMoves: l.minMoves }))));
     templateSelect.addEventListener('change', () => { if (templateSelect.value) loadTemplate(templateSelect.value); });
 
     /* ---------- 盤面大小與出口 ---------- */
     const range = (a, b) => Array.from({ length: b - a + 1 }, (_, i) => a + i);
-    const colsSelect = h('select', { id: 'bd-cols', class: 'input' }, range(E.LIMITS.minCols, E.LIMITS.maxCols).map((n) => h('option', { value: String(n) }, n + ' 欄')));
-    const rowsSelect = h('select', { id: 'bd-rows', class: 'input' }, range(E.LIMITS.minRows, E.LIMITS.maxRows).map((n) => h('option', { value: String(n) }, n + ' 列')));
+    const colsSelect = h('select', { id: 'bd-cols', class: 'input' }, range(E.LIMITS.minCols, E.LIMITS.maxCols).map((n) => h('option', { value: String(n) }, t('{n} 欄', { n }))));
+    const rowsSelect = h('select', { id: 'bd-rows', class: 'input' }, range(E.LIMITS.minRows, E.LIMITS.maxRows).map((n) => h('option', { value: String(n) }, t('{n} 列', { n }))));
     const sideSelect = h('select', { id: 'bd-side', class: 'input' }, E.SIDES.map((s) => h('option', { value: s }, E.SIDE_NAMES[s])));
     const atSelect = h('select', { id: 'bd-at', class: 'input' });
-    const resetBoardBtn = h('button', { type: 'button', class: 'btn btn-secondary btn-sm', onclick: () => changeBoard(4, 5, 'bottom', 1) }, '恢復標準 4 × 5');
+    const resetBoardBtn = h('button', { type: 'button', class: 'btn btn-secondary btn-sm', onclick: () => changeBoard(4, 5, 'bottom', 1) }, t('恢復標準 4 × 5'));
 
     function syncBoardControls() {
       colsSelect.value = String(st.cols);
@@ -351,7 +352,9 @@
       atSelect.textContent = '';
       range(0, len - 2).forEach((i) => {
         const center = i * 2 === len - 2;
-        atSelect.appendChild(h('option', { value: String(i) }, '第 ' + (i + 1) + '–' + (i + 2) + (horizontal ? ' 欄' : ' 列') + (center ? '（中央）' : '')));
+        atSelect.appendChild(h('option', { value: String(i) }, (horizontal
+          ? (center ? t('第 {from}–{to} 欄（中央）', { from: i + 1, to: i + 2 }) : t('第 {from}–{to} 欄', { from: i + 1, to: i + 2 }))
+          : (center ? t('第 {from}–{to} 列（中央）', { from: i + 1, to: i + 2 }) : t('第 {from}–{to} 列', { from: i + 1, to: i + 2 })))));
       });
       atSelect.value = String(st.exit.at);
       resetBoardBtn.hidden = E.isStandard(st);
@@ -365,7 +368,7 @@
       if (a == null || a > len - 2) a = Math.floor((len - 2) / 2);
       const out = st.pieces.filter((p) => p.x + p.w > cols || p.y + p.h > rows);
       if (out.length) {
-        const ok = await confirmDialog('縮小盤面？', '有 ' + out.length + ' 顆棋子會超出新的盤面並被移除，之後可以按「復原」找回來。', '縮小並移除', true);
+        const ok = await confirmDialog(t('縮小盤面？'), t('有 {n} 顆棋子會超出新的盤面並被移除，之後可以按「復原」找回來。', { n: out.length }), t('縮小並移除'), true);
         if (!ok) { syncBoardControls(); return; }
       }
       pushUndo();
@@ -398,41 +401,41 @@
     const page = h('div', { class: 'page editor-page' },
       h('div', { class: 'section-head' },
         h('div', {},
-          h('nav', { class: 'crumbs', 'aria-label': '目前位置' }, h('a', { href: '#/mine' }, '我的關卡'), h('span', { 'aria-hidden': 'true' }, '/'), h('span', { class: 'crumb-here' }, routeId === 'new' && !levelId ? '新增' : '編輯')),
-          h('h1', { class: 'page-title' }, '關卡編輯器'),
+          h('nav', { class: 'crumbs', 'aria-label': t('目前位置') }, h('a', { href: '#/mine' }, t('我的關卡')), h('span', { 'aria-hidden': 'true' }, '/'), h('span', { class: 'crumb-here' }, routeId === 'new' && !levelId ? t('新增') : t('編輯'))),
+          h('h1', { class: 'page-title' }, t('關卡編輯器')),
           saveState),
         h('div', { class: 'btn-row' }, undoBtn, redoBtn,
-          h('button', { type: 'button', class: 'btn btn-secondary', onclick: shareCurrent }, icon('share', 18), '分享'),
-          h('button', { type: 'button', class: 'btn btn-outline', onclick: testPlay }, icon('play', 18), '試玩'),
-          h('button', { type: 'button', class: 'btn btn-primary', onclick: save }, icon('save', 18), '儲存關卡'))),
+          h('button', { type: 'button', class: 'btn btn-secondary', onclick: shareCurrent }, icon('share', 18), t('分享')),
+          h('button', { type: 'button', class: 'btn btn-outline', onclick: testPlay }, icon('play', 18), t('試玩')),
+          h('button', { type: 'button', class: 'btn btn-primary', onclick: save }, icon('save', 18), t('儲存關卡')))),
       h('div', { class: 'editor-layout' },
-        h('aside', { class: 'editor-tools', 'aria-label': '棋子與工具' },
-          h('section', { class: 'card' }, h('h2', { class: 'card-title' }, '棋子'), palette),
-          h('section', { class: 'card' }, h('h2', { class: 'card-title' }, '工具'),
+        h('aside', { class: 'editor-tools', 'aria-label': t('棋子與工具') },
+          h('section', { class: 'card' }, h('h2', { class: 'card-title' }, t('棋子')), palette),
+          h('section', { class: 'card' }, h('h2', { class: 'card-title' }, t('工具')),
             h('div', { class: 'tool-grid' }, selectBtn, eraseBtn, flipBtn, clearBtn)),
           h('section', { class: 'card' }, pieceTitle, pieceDesc, labelField, deleteBtn)),
-        h('section', { class: 'editor-stage', 'aria-label': '盤面' },
+        h('section', { class: 'editor-stage', 'aria-label': t('盤面') },
           h('div', { class: 'stage-info' }, sizeInfo, boardInfo),
           h('div', { class: 'board-wrap' }, board.el),
           exitBox,
           modeHint),
-        h('aside', { class: 'editor-side', 'aria-label': '關卡設定' },
-          h('section', { class: 'card' }, h('h2', { class: 'card-title' }, '關卡資訊'),
-            h('div', { class: 'field' }, h('label', { class: 'field-label', for: 'lv-name' }, '名稱'), nameInput, nameError),
-            h('div', { class: 'field' }, h('label', { class: 'field-label', for: 'lv-diff' }, '難度'), diffSelect),
-            h('div', { class: 'field' }, h('label', { class: 'field-label', for: 'lv-desc' }, '說明'), descInput)),
-          h('section', { class: 'card' }, h('h2', { class: 'card-title' }, '盤面大小與出口'),
+        h('aside', { class: 'editor-side', 'aria-label': t('關卡設定') },
+          h('section', { class: 'card' }, h('h2', { class: 'card-title' }, t('關卡資訊')),
+            h('div', { class: 'field' }, h('label', { class: 'field-label', for: 'lv-name' }, t('名稱')), nameInput, nameError),
+            h('div', { class: 'field' }, h('label', { class: 'field-label', for: 'lv-diff' }, t('難度')), diffSelect),
+            h('div', { class: 'field' }, h('label', { class: 'field-label', for: 'lv-desc' }, t('說明')), descInput)),
+          h('section', { class: 'card' }, h('h2', { class: 'card-title' }, t('盤面大小與出口')),
             h('div', { class: 'field-pair' },
-              h('div', { class: 'field' }, h('label', { class: 'field-label', for: 'bd-cols' }, '寬'), colsSelect),
-              h('div', { class: 'field' }, h('label', { class: 'field-label', for: 'bd-rows' }, '高'), rowsSelect)),
+              h('div', { class: 'field' }, h('label', { class: 'field-label', for: 'bd-cols' }, t('寬')), colsSelect),
+              h('div', { class: 'field' }, h('label', { class: 'field-label', for: 'bd-rows' }, t('高')), rowsSelect)),
             h('div', { class: 'field-pair' },
-              h('div', { class: 'field' }, h('label', { class: 'field-label', for: 'bd-side' }, '出口在'), sideSelect),
-              h('div', { class: 'field' }, h('label', { class: 'field-label', for: 'bd-at' }, '位置'), atSelect)),
-            h('p', { class: 'hint-text' }, '出口寬兩格，曹操要移到緊鄰出口的位置。盤面越大，解題器要算越久。'),
+              h('div', { class: 'field' }, h('label', { class: 'field-label', for: 'bd-side' }, t('出口在')), sideSelect),
+              h('div', { class: 'field' }, h('label', { class: 'field-label', for: 'bd-at' }, t('位置')), atSelect)),
+            h('p', { class: 'hint-text' }, t('出口寬兩格，曹操要移到緊鄰出口的位置。盤面越大，解題器要算越久。')),
             resetBoardBtn),
-          h('section', { class: 'card' }, h('h2', { class: 'card-title' }, '從內建關卡改起'),
-            h('div', { class: 'field' }, h('label', { class: 'field-label', for: 'lv-template' }, '載入盤面'), templateSelect)),
-          h('section', { class: 'card', 'aria-labelledby': 'chk-title' }, h('h2', { class: 'card-title', id: 'chk-title' }, '檢查'), checkList))));
+          h('section', { class: 'card' }, h('h2', { class: 'card-title' }, t('從內建關卡改起')),
+            h('div', { class: 'field' }, h('label', { class: 'field-label', for: 'lv-template' }, t('載入盤面')), templateSelect)),
+          h('section', { class: 'card', 'aria-labelledby': 'chk-title' }, h('h2', { class: 'card-title', id: 'chk-title' }, t('檢查')), checkList))));
     container.appendChild(page);
 
     /* ---------- 繪製 ---------- */
@@ -446,14 +449,14 @@
       board.el.classList.toggle('tool-erase', tool === 'erase');
       board.el.classList.toggle('tool-place', tool === 'place');
       const empties = E.validate(st).empties;
-      boardInfo.textContent = '棋子 ' + st.pieces.length + ' · 空格 ' + empties;
-      sizeInfo.textContent = st.cols + ' × ' + st.rows + ' · 出口在' + E.exitText(st);
+      boardInfo.textContent = t('棋子 {n} · 空格 {empties}', { n: st.pieces.length, empties });
+      sizeInfo.textContent = t('{cols} × {rows} · 出口在{exitText}', { cols: st.cols, rows: st.rows, exitText: E.exitText(st) });
       const sig = st.cols + 'x' + st.rows + st.exit.side + st.exit.at;
       if (sig !== exitSig) { exitSig = sig; exitBox.replaceChildren(HRD.exitLabel(st)); }
     }
 
     function renderMeta() {
-      saveState.textContent = dirty ? '有未儲存的變更' : levelId ? '已儲存' : '還沒儲存';
+      saveState.textContent = dirty ? t('有未儲存的變更') : levelId ? t('已儲存') : t('還沒儲存');
       saveState.classList.toggle('is-dirty', dirty);
     }
 
@@ -465,7 +468,7 @@
         pb.button.setAttribute('aria-pressed', active ? 'true' : 'false');
         const full = type === 'king' && n >= 1;
         pb.button.disabled = full;
-        pb.count.textContent = active ? '放置中' : type === 'king' ? (full ? '已放 1 / 1' : '每關 1 個') : '已放 ' + n;
+        pb.count.textContent = active ? t('放置中') : type === 'king' ? (full ? t('已放 1 / 1') : t('每關 1 個')) : t('已放 {n}', { n });
       });
       selectBtn.setAttribute('aria-pressed', tool === 'select' ? 'true' : 'false');
       eraseBtn.setAttribute('aria-pressed', tool === 'erase' ? 'true' : 'false');
@@ -475,31 +478,31 @@
 
       const p = sel != null ? st.pieces[sel] : null;
       if (p) {
-        pieceTitle.textContent = '選取的棋子';
-        pieceDesc.textContent = E.TYPES[p.type].name + '，第 ' + (p.x + 1) + ' 欄第 ' + (p.y + 1) + ' 列。拖曳可以移動，方向鍵可以微調。';
+        pieceTitle.textContent = t('選取的棋子');
+        pieceDesc.textContent = t('{name}，第 {n} 欄第 {n2} 列。拖曳可以移動，方向鍵可以微調。', { name: E.TYPES[p.type].name, n: p.x + 1, n2: p.y + 1 });
         labelField.hidden = false;
-        if (document.activeElement !== labelInput) labelInput.value = p.label;
+        if (document.activeElement !== labelInput) labelInput.value = t(p.label);
         deleteBtn.hidden = false;
       } else if (tool === 'place') {
-        pieceTitle.textContent = '下一顆：' + E.TYPES[placeType].name;
-        pieceDesc.textContent = '點盤面上的空格放下棋子。';
+        pieceTitle.textContent = t('下一顆：{name}', { name: E.TYPES[placeType].name });
+        pieceDesc.textContent = t('點盤面上的空格放下棋子。');
         labelField.hidden = false;
-        if (document.activeElement !== labelInput) labelInput.value = nextLabel;
+        if (document.activeElement !== labelInput) labelInput.value = t(nextLabel);
         deleteBtn.hidden = true;
       } else {
-        pieceTitle.textContent = tool === 'erase' ? '刪除模式' : '選取模式';
-        pieceDesc.textContent = tool === 'erase' ? '點一顆棋子就會刪掉它。' : '點棋子可以選取、改文字；拖曳可以移動。';
+        pieceTitle.textContent = tool === 'erase' ? t('刪除模式') : t('選取模式');
+        pieceDesc.textContent = tool === 'erase' ? t('點一顆棋子就會刪掉它。') : t('點棋子可以選取、改文字；拖曳可以移動。');
         labelField.hidden = true;
         deleteBtn.hidden = true;
       }
       modeHint.textContent = tool === 'place'
-        ? '點空格放下「' + E.TYPES[placeType].name + '」 · 拖曳棋子可以移動'
-        : tool === 'erase' ? '點棋子刪除 · 按「選取／移動」回到一般模式' : '點棋子選取 · 拖曳移動 · 選取後按 Delete 刪除';
+        ? t('點空格放下「{name}」 · 拖曳棋子可以移動', { name: E.TYPES[placeType].name })
+        : tool === 'erase' ? t('點棋子刪除 · 按「選取／移動」回到一般模式') : t('點棋子選取 · 拖曳移動 · 選取後按 Delete 刪除');
     }
 
     function line(kind, text, strong) {
       const ic = { ok: 'ok', bad: 'bad', warn: 'alert', info: 'info', run: 'clock' }[kind];
-      const label = { ok: '通過', bad: '有問題', warn: '注意', info: '資訊', run: '計算中' }[kind];
+      const label = { ok: t('通過'), bad: t('有問題'), warn: t('注意'), info: t('資訊'), run: t('計算中') }[kind];
       const svg = icon(ic, 20);
       svg.setAttribute('role', 'img');
       svg.setAttribute('aria-label', label);
@@ -511,21 +514,21 @@
       const v = E.validate(st);
       checkList.textContent = '';
       if (!st.pieces.length) {
-        checkList.appendChild(line('info', '先從「棋子」選曹操，點盤面放下去。'));
+        checkList.appendChild(line('info', t('先從「棋子」選曹操，點盤面放下去。')));
         return;
       }
-      checkList.appendChild(v.kings === 1 ? line('ok', '曹操剛好 1 個') : line('bad', v.kings === 0 ? '還沒有放曹操' : '曹操只能有一個'));
-      v.errors.filter((e) => e.indexOf('曹操') < 0).forEach((e) => checkList.appendChild(line('bad', e)));
+      checkList.appendChild(v.kings === 1 ? line('ok', t('曹操剛好 1 個')) : line('bad', v.kings === 0 ? t('還沒有放曹操') : t('曹操只能有一個')));
+      v.errors.filter((e) => e.indexOf('曹操') < 0).forEach((e) => checkList.appendChild(line('bad', t(e))));
       if (v.empties > 0) {
         const std = E.isStandard(st);
-        checkList.appendChild(line(!std || v.empties === 2 ? 'ok' : 'info', std && v.empties !== 2 ? '（標準開局是 2 格）' : '', '空格 ' + v.empties + ' 格'));
+        checkList.appendChild(line(!std || v.empties === 2 ? 'ok' : 'info', std && v.empties !== 2 ? t('（標準開局是 2 格）') : '', t('空格 {empties} 格', { empties: v.empties })));
       }
-      v.notes.forEach((n) => checkList.appendChild(line('warn', n)));
+      v.notes.forEach((n) => checkList.appendChild(line('warn', t(n))));
       if (!v.ok) return;
-      if (check.status === 'running' || check.status === 'idle' || check.shape !== E.shapeKey(st)) checkList.appendChild(line('run', '正在計算能不能過關…'));
-      else if (check.status === 'solved') checkList.appendChild(line('ok', ' · 最少 ' + check.minMoves + ' 步', '可以過關'));
-      else if (check.status === 'unsolvable') checkList.appendChild(line('bad', '：曹操怎麼走都到不了出口', '無解'));
-      else if (check.status === 'too-big') checkList.appendChild(line('warn', '：盤面變化太多，算不出來', '無法判定'));
+      if (check.status === 'running' || check.status === 'idle' || check.shape !== E.shapeKey(st)) checkList.appendChild(line('run', t('正在計算能不能過關…')));
+      else if (check.status === 'solved') checkList.appendChild(line('ok', t(' · 最少 {minMoves} 步', { minMoves: check.minMoves }), t('可以過關')));
+      else if (check.status === 'unsolvable') checkList.appendChild(line('bad', t('：曹操怎麼走都到不了出口'), t('無解')));
+      else if (check.status === 'too-big') checkList.appendChild(line('warn', t('：盤面變化太多，算不出來'), t('無法判定')));
     }
 
     function render() {
@@ -538,14 +541,14 @@
     /* ---------- 盤面操作 ---------- */
     board.bed.addEventListener('pointerdown', (e) => {
       if (e.pointerType === 'mouse' && e.button !== 0) return;
-      const t = e.target.closest('.piece');
-      if (t && tool !== 'erase') {
-        const i = Number(t.dataset.i);
+      const tt = e.target.closest('.piece');
+      if (tt && tool !== 'erase') {
+        const i = Number(tt.dataset.i);
         const c = board.cellAt(e.clientX, e.clientY);
         const p = st.pieces[i];
         drag = { i: i, ox: c.x - p.x, oy: c.y - p.y, moved: false, id: e.pointerId };
-        try { t.setPointerCapture(e.pointerId); } catch (err) { /* 舊瀏覽器 */ }
-      } else if (!t) {
+        try { tt.setPointerCapture(e.pointerId); } catch (err) { /* 舊瀏覽器 */ }
+      } else if (!tt) {
         drag = { empty: true, id: e.pointerId };
       }
     });
@@ -553,12 +556,12 @@
       if (drag && !drag.empty && e.pointerId === drag.id) {
         const c = board.cellAt(e.clientX, e.clientY);
         const p = st.pieces[drag.i];
-        const t = E.TYPES[p.type];
-        const x = Math.max(0, Math.min(st.cols - t.w, c.x - drag.ox));
-        const y = Math.max(0, Math.min(st.rows - t.h, c.y - drag.oy));
+        const tt = E.TYPES[p.type];
+        const x = Math.max(0, Math.min(st.cols - tt.w, c.x - drag.ox));
+        const y = Math.max(0, Math.min(st.rows - tt.h, c.y - drag.oy));
         if (x !== p.x || y !== p.y) drag.moved = true;
         if (drag.moved) {
-          ghost = { type: p.type, x: x, y: y, ok: fits(p.type, x, y, drag.i), label: p.label };
+          ghost = { type: p.type, x: x, y: y, ok: fits(p.type, x, y, drag.i), label: t(p.label) };
           drag.tx = x; drag.ty = y;
           renderBoard();
         }
@@ -593,16 +596,16 @@
         suppressClick = true;
         ghost = null;
         if (e.type === 'pointerup' && fits(st.pieces[d.i].type, d.tx, d.ty, d.i)) { sel = d.i; movePiece(d.i, d.tx, d.ty); }
-        else { renderBoard(); if (e.type === 'pointerup') toast('那裡放不下'); }
+        else { renderBoard(); if (e.type === 'pointerup') toast(t('那裡放不下')); }
       }
     };
     board.bed.addEventListener('pointerup', endPointer);
     board.bed.addEventListener('pointercancel', endPointer);
     board.bed.addEventListener('click', (e) => {
-      const t = e.target.closest('.piece');
-      if (!t) return;
+      const tt = e.target.closest('.piece');
+      if (!tt) return;
       if (suppressClick) { suppressClick = false; return; }
-      const i = Number(t.dataset.i);
+      const i = Number(tt.dataset.i);
       if (tool === 'erase') { removePiece(i); return; }
       sel = sel === i ? null : i;
       if (tool === 'place') tool = 'select';
@@ -656,7 +659,7 @@
       /* 離開前提醒：有未儲存的變更時回傳要顯示的訊息 */
       guard() {
         if (!dirty || leaving) return null;
-        return { message: '這個關卡還有未儲存的變更。', save: save };
+        return { message: t('這個關卡還有未儲存的變更。'), save: save };
       },
     };
   }

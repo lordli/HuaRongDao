@@ -1,6 +1,7 @@
 /* 首頁・關卡選擇 */
 (function (root) {
   'use strict';
+  const t = (s, p) => root.HRD.i18n.t(s, p);
   const HRD = root.HRD;
   const E = HRD.engine;
   const { h, icon, formatTime } = HRD.ui;
@@ -17,13 +18,13 @@
   function levelStatus(key, level) {
     const pr = HRD.store.progress(key);
     const sv = HRD.store.savedGame(key);
-    if (pr && pr.solved) return { cls: 'done', icon: 'check', text: '最佳 ' + pr.bestSteps + ' 步', stars: pr.stars || 0 };
-    if (sv && sv.hist && sv.hist.length) return { cls: 'playing', icon: 'clock', text: '進行中 · 第 ' + sv.hist.length + ' 步' };
-    return { cls: 'fresh', icon: null, text: level.minMoves != null ? '最少 ' + level.minMoves + ' 步' : '未挑戰' };
+    if (pr && pr.solved) return { cls: 'done', icon: 'check', text: t('最佳 {bestSteps} 步', { bestSteps: pr.bestSteps }), stars: pr.stars || 0 };
+    if (sv && sv.hist && sv.hist.length) return { cls: 'playing', icon: 'clock', text: t('進行中 · 第 {n} 步', { n: sv.hist.length }) };
+    return { cls: 'fresh', icon: null, text: level.minMoves != null ? t('最少 {minMoves} 步', { minMoves: level.minMoves }) : t('未挑戰') };
   }
 
   function starsSmall(n) {
-    const box = h('span', { class: 'stars-sm', role: 'img', 'aria-label': n + ' 顆星（滿分 3）' });
+    const box = h('span', { class: 'stars-sm', role: 'img', 'aria-label': t('{n} 顆星（滿分 3）', { n }) });
     for (let i = 1; i <= 3; i++) box.appendChild(icon('star', 14, i <= n ? 'star-on' : 'star-off'));
     return box;
   }
@@ -53,52 +54,52 @@
     const last = HRD.store.lastGame();
     const lastInfo = last ? app.resolve(last.key) : null;
     if (lastInfo && lastInfo.kind !== 'draft') {
-      lead = h('section', { class: 'lead-card', 'aria-label': '繼續上一局' },
+      lead = h('section', { class: 'lead-card', 'aria-label': t('繼續上一局') },
         h('div', { class: 'lead-thumb' }, HRD.thumb(lastInfo.level, savedState(lastInfo.level, last.game), 190)),
         h('div', { class: 'lead-body' },
-          h('span', { class: 'eyebrow' }, '繼續上一局'),
+          h('span', { class: 'eyebrow' }, t('繼續上一局')),
           h('h1', { class: 'lead-title' }, lastInfo.level.name),
-          h('p', { class: 'lead-meta' }, '已走 ' + (last.game.hist || []).length + ' 步 · 用時 ' + formatTime(last.game.elapsed || 0)),
+          h('p', { class: 'lead-meta' }, t('已走 {n} 步 · 用時 {time}', { n: (last.game.hist || []).length, time: formatTime(last.game.elapsed || 0) })),
           h('div', { class: 'btn-row' },
-            h('a', { class: 'btn btn-primary', href: '#/play/' + last.key.replace(':', '/') }, icon('play', 18), '繼續遊戲'))));
+            h('a', { class: 'btn btn-primary', href: '#/play/' + last.key.replace(':', '/') }, icon('play', 18), t('繼續遊戲')))));
     } else {
       const next = levels.find((l) => { const p = HRD.store.progress('b:' + l.id); return !(p && p.solved); }) || levels[0];
       const cat = cats.find((c) => c.id === next.category);
       const solvedAny = levels.some((l) => { const p = HRD.store.progress('b:' + l.id); return p && p.solved; });
-      lead = h('section', { class: 'lead-card', 'aria-label': '下一關' },
+      lead = h('section', { class: 'lead-card', 'aria-label': t('下一關') },
         h('div', { class: 'lead-thumb' }, HRD.thumb(next, null, 190)),
         h('div', { class: 'lead-body' },
-          h('span', { class: 'eyebrow' }, solvedAny ? '下一關' : '從這裡開始'),
+          h('span', { class: 'eyebrow' }, solvedAny ? t('下一關') : t('從這裡開始')),
           h('h1', { class: 'lead-title' }, next.name),
-          h('p', { class: 'lead-meta' }, cat.name + ' · 最少 ' + next.minMoves + ' 步'),
+          h('p', { class: 'lead-meta' }, t('{name} · 最少 {minMoves} 步', { name: cat.name, minMoves: next.minMoves })),
           h('p', { class: 'lead-desc' }, next.description),
           h('div', { class: 'btn-row' },
-            h('a', { class: 'btn btn-primary', href: '#/play/b/' + next.id }, icon('play', 18), '開始挑戰'))));
+            h('a', { class: 'btn btn-primary', href: '#/play/b/' + next.id }, icon('play', 18), t('開始挑戰')))));
     }
 
     const mineCount = HRD.store.customLevels().length;
-    const create = h('section', { class: 'create-card', 'aria-label': '自己出題' },
+    const create = h('section', { class: 'create-card', 'aria-label': t('自己出題') },
       h('div', {},
-        h('h2', {}, '自己出題'),
-        h('p', {}, '在編輯器排好棋子，會自動檢查能不能解、最少要幾步。存起來慢慢玩，或產生分享連結給朋友挑戰。')),
+        h('h2', {}, t('自己出題')),
+        h('p', {}, t('在編輯器排好棋子，會自動檢查能不能解、最少要幾步。存起來慢慢玩，或產生分享連結給朋友挑戰。'))),
       h('div', { class: 'btn-row' },
-        h('a', { class: 'btn btn-gold', href: '#/edit/new' }, icon('plus', 18), '開啟關卡編輯器'),
-        h('button', { type: 'button', class: 'link-light link-btn', onclick: () => HRD.io.importDialog() }, '輸入分享碼'),
-        h('a', { class: 'link-light', href: '#/mine' }, '我的關卡（' + mineCount + '）')));
+        h('a', { class: 'btn btn-gold', href: '#/edit/new' }, icon('plus', 18), t('開啟關卡編輯器')),
+        h('button', { type: 'button', class: 'link-light link-btn', onclick: () => HRD.io.importDialog() }, t('輸入分享碼')),
+        h('a', { class: 'link-light', href: '#/mine' }, t('我的關卡（{mineCount}）', { mineCount }))));
 
     /* 關卡列表 */
     const solved = levels.filter((l) => { const p = HRD.store.progress('b:' + l.id); return p && p.solved; });
     const starTotal = solved.reduce((n, l) => n + (HRD.store.progress('b:' + l.id).stars || 0), 0);
     const grid = h('div', { class: 'level-grid' });
-    const tabs = h('div', { class: 'tabs', role: 'group', 'aria-label': '分類' });
-    const tabDefs = [{ id: 'all', name: '全部' }].concat(cats);
+    const tabs = h('div', { class: 'tabs', role: 'group', 'aria-label': t('分類') });
+    const tabDefs = [{ id: 'all', name: t('全部') }].concat(cats);
     const isSolved = (l) => { const p = HRD.store.progress('b:' + l.id); return !!(p && p.solved); };
     tabDefs.forEach((c) => {
       const inCat = levels.filter((l) => c.id === 'all' || l.category === c.id);
       const left = inCat.filter((l) => !isSolved(l)).length;
       tabs.appendChild(h('button', {
         type: 'button', class: 'tab', 'data-id': c.id,
-        'aria-label': c.name + '，' + inCat.length + ' 關' + (left < inCat.length ? '，還有 ' + left + ' 關沒過' : ''),
+        'aria-label': left < inCat.length ? t('{name}，{n} 關，還有 {left} 關沒過', { name: c.name, n: inCat.length, left }) : t('{name}，{n} 關', { name: c.name, n: inCat.length }),
         onclick: () => { filter = c.id; app.state.homeFilter = c.id; drawGrid(); },
       }, c.name, h('span', { class: 'tab-count', 'aria-hidden': 'true' }, String(inCat.length))));
     });
@@ -110,8 +111,8 @@
       grid.textContent = '';
       const shown = levels.filter((l) => (filter === 'all' || l.category === filter) && !(unsolvedOnly.checked && isSolved(l)));
       shown.forEach((l) => grid.appendChild(levelCard(l)));
-      if (!shown.length) grid.appendChild(h('p', { class: 'empty-line' }, '這個分類全部過關了，太厲害了！'));
-      tabs.querySelectorAll('.tab').forEach((t) => t.setAttribute('aria-pressed', t.dataset.id === filter ? 'true' : 'false'));
+      if (!shown.length) grid.appendChild(h('p', { class: 'empty-line' }, t('這個分類全部過關了，太厲害了！')));
+      tabs.querySelectorAll('.tab').forEach((tt) => tt.setAttribute('aria-pressed', tt.dataset.id === filter ? 'true' : 'false'));
     }
     drawGrid();
 
@@ -120,13 +121,13 @@
     let dismissed = false;
     try { dismissed = root.localStorage.getItem(NUDGE_KEY) === '1'; } catch (e) { /* 讀不到就照常顯示 */ }
     if (HRD.cloud.canSignIn() && !HRD.store.account() && !dismissed && (solved.length || mineCount)) {
-      nudge = h('section', { class: 'sync-nudge', 'aria-label': '登入同步' },
+      nudge = h('section', { class: 'sync-nudge', 'aria-label': t('登入同步') },
         icon('cloud', 22),
-        h('p', {}, '登入帳號，就能在手機和電腦之間同步關卡和過關紀錄。'),
+        h('p', {}, t('登入帳號，就能在手機和電腦之間同步關卡和過關紀錄。')),
         h('div', { class: 'btn-row' },
-          h('button', { type: 'button', class: 'btn btn-primary btn-sm', onclick: () => HRD.cloud.signInDialog() }, '登入'),
+          h('button', { type: 'button', class: 'btn btn-primary btn-sm', onclick: () => HRD.cloud.signInDialog() }, t('登入')),
           h('button', {
-            type: 'button', class: 'icon-btn ghost', 'aria-label': '不再顯示',
+            type: 'button', class: 'icon-btn ghost', 'aria-label': t('不再顯示'),
             onclick: () => { try { root.localStorage.setItem(NUDGE_KEY, '1'); } catch (e) { /* 只關這一次 */ } nudge.remove(); },
           }, icon('x', 20))));
     }
@@ -137,10 +138,10 @@
       h('section', { class: 'levels', 'aria-labelledby': 'levels-title' },
         h('div', { class: 'section-head' },
           h('div', {},
-            h('h2', { id: 'levels-title', class: 'section-title' }, '關卡'),
-            h('p', { class: 'section-sub' }, '已過關 ' + solved.length + ' / ' + levels.length + ' · 共 ' + starTotal + ' 顆星'))),
+            h('h2', { id: 'levels-title', class: 'section-title' }, t('關卡')),
+            h('p', { class: 'section-sub' }, t('已過關 {n} / {n2} · 共 {starTotal} 顆星', { n: solved.length, n2: levels.length, starTotal })))),
         h('div', { class: 'levels-bar' }, tabs,
-          h('label', { class: 'switch-row', for: 'home-unsolved' }, unsolvedOnly, h('span', {}, '只看還沒過關的'))),
+          h('label', { class: 'switch-row', for: 'home-unsolved' }, unsolvedOnly, h('span', {}, t('只看還沒過關的')))),
         grid)));
 
     return null;

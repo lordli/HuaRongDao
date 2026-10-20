@@ -7,6 +7,7 @@
  */
 (function (root) {
   'use strict';
+  const t = (s, p) => root.HRD.i18n.t(s, p);
   const HRD = root.HRD || (root.HRD = {});
   const E = HRD.engine || require('./engine.js');
 
@@ -180,20 +181,20 @@
     let k = 0, timer = null;
     const counter = h('span', { class: 'replay-count', 'aria-live': 'polite' });
     const playBtn = h('button', { type: 'button', class: 'btn btn-primary btn-sm' });
-    const prev = h('button', { type: 'button', class: 'icon-btn', 'aria-label': '上一步', onclick: () => { stop(); go(k - 1); } }, icon('back', 20));
-    const next = h('button', { type: 'button', class: 'icon-btn', 'aria-label': '下一步', onclick: () => { stop(); go(k + 1); } }, icon('next', 20));
-    const first = h('button', { type: 'button', class: 'icon-btn', 'aria-label': '回到開頭', onclick: () => { stop(); go(0); } }, icon('restart', 20));
+    const prev = h('button', { type: 'button', class: 'icon-btn', 'aria-label': t('上一步'), onclick: () => { stop(); go(k - 1); } }, icon('back', 20));
+    const next = h('button', { type: 'button', class: 'icon-btn', 'aria-label': t('下一步'), onclick: () => { stop(); go(k + 1); } }, icon('next', 20));
+    const first = h('button', { type: 'button', class: 'icon-btn', 'aria-label': t('回到開頭'), onclick: () => { stop(); go(0); } }, icon('restart', 20));
     function go(n) {
       k = Math.max(0, Math.min(states.length - 1, n));
       view.render(states[k]);
-      counter.textContent = k === 0 ? '開始' : '第 ' + k + ' / ' + (states.length - 1) + ' 步';
+      counter.textContent = k === 0 ? t('開始') : t('第 {k} / {n} 步', { k, n: states.length - 1 });
       prev.disabled = k === 0;
       first.disabled = k === 0;
       next.disabled = k === states.length - 1;
     }
     function drawPlay() {
       playBtn.textContent = '';
-      playBtn.append(icon(timer ? 'pause' : 'play', 16), timer ? '暫停' : (k === states.length - 1 ? '重播' : '播放'));
+      playBtn.append(icon(timer ? 'pause' : 'play', 16), timer ? t('暫停') : (k === states.length - 1 ? t('重播') : t('播放')));
     }
     function stop() { clearInterval(timer); timer = null; drawPlay(); }
     function play() {
@@ -205,12 +206,12 @@
     go(0);
     drawPlay();
     return dialog({
-      title: rec.name + ' 的走法',
+      title: t('{name} 的走法', { name: rec.name }),
       body: h('div', { class: 'replay' },
-        h('p', { class: 'dialog-text' }, level.name + ' · ' + rec.steps + ' 步 · ' + formatTime(rec.timeMs)),
+        h('p', { class: 'dialog-text' }, t('{name} · {steps} 步 · {time}', { name: level.name, steps: rec.steps, time: formatTime(rec.timeMs) })),
         h('div', { class: 'replay-board' }, view.el, HRD.exitLabel(states[0])),
         h('div', { class: 'replay-controls' }, first, prev, playBtn, next, counter)),
-      actions: [{ label: '關閉', value: true }],
+      actions: [{ label: t('關閉'), value: true }],
     }).then(() => stop());
   }
 

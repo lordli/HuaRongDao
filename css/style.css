@@ -865,3 +865,15 @@ a.menu-item { text-decoration: none; }
 @media (prefers-reduced-motion: reduce) {
   .board-preview.board-replay .piece { transition: none; }
 }
+
+/* ---------- 英文介面 ---------- */
+/* 英文名字比中文長：棋子上的字縮小、不加字距，避免超出棋子 */
+html[lang="en"] .piece, html[lang="en"] .board-overlay .ghost { letter-spacing: 0; }
+html[lang="en"] .piece-king { font-size: calc(var(--u) * 0.3); }
+html[lang="en"] .piece-tall, html[lang="en"] .piece-wide { font-size: calc(var(--u) * 0.19); }
+html[lang="en"] .piece-soldier { font-size: calc(var(--u) * 0.17); }
+html[lang="en"] .ghost-king { font-size: calc(var(--u) * 0.3); }
+html[lang="en"] .ghost-tall, html[lang="en"] .ghost-wide { font-size: calc(var(--u) * 0.19); }
+html[lang="en"] .ghost-soldier { font-size: calc(var(--u) * 0.17); }
+html[lang="en"] .piece-label { overflow-wrap: anywhere; text-align: center; }
+html[lang="en"] .brand-name, html[lang="en"] .lead-title, html[lang="en"] .play-title, html[lang="en"] .card-name { letter-spacing: 0.01em; }

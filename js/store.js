@@ -6,6 +6,7 @@
 (function (root) {
   'use strict';
 
+  const tr = (s, p) => (root.HRD && root.HRD.i18n ? root.HRD.i18n.t(s, p) : s.replace('{name}', p.name));
   const GUEST_KEY = 'huarongdao.v1';
   const ACCOUNT_KEY = 'huarongdao.account';
   const userKey = (uid) => GUEST_KEY + '.u.' + uid;
@@ -319,7 +320,7 @@
     duplicateLevel(id) {
       const l = data.custom.find((x) => x.id === id);
       if (!l) return null;
-      const copy = Object.assign({}, JSON.parse(JSON.stringify(l)), { id: null, name: uniqueName(l.name + '（複本）') });
+      const copy = Object.assign({}, JSON.parse(JSON.stringify(l)), { id: null, name: uniqueName(tr('{name}（複本）', { name: l.name })) });
       delete copy.publicId;
       return store.saveLevel(copy);
     },

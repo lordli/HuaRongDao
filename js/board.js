@@ -4,6 +4,7 @@
  */
 (function (root) {
   'use strict';
+  const t = (s, p) => root.HRD.i18n.t(s, p);
   const HRD = root.HRD;
   const { h, icon } = HRD.ui;
   const E = HRD.engine;
@@ -35,7 +36,8 @@
 
   function describe(p) {
     const type = E.TYPES[p.type].name;
-    return (p.label === type ? p.label : p.label + '（' + type + '）') + '，第 ' + (p.x + 1) + ' 欄第 ' + (p.y + 1) + ' 列';
+    const label = t(p.label);
+    return t('{text}，第 {n} 欄第 {n2} 列', { text: label === type ? label : t('{label}（{type}）', { label, type }), n: p.x + 1, n2: p.y + 1 });
   }
 
   /* 棋盤區（不含外框）最多多高，用來限制直長盤面的寬度 */
@@ -49,7 +51,7 @@
       this.bed = h('div', { class: 'board-bed' });
       this.cells = h('div', { class: 'board-cells', 'aria-hidden': 'true' });
       const quiet = this.kind === 'thumb' || this.kind === 'preview';
-      this.layer = h('div', { class: 'board-pieces', role: quiet ? null : 'group', 'aria-label': quiet ? null : '棋盤' });
+      this.layer = h('div', { class: 'board-pieces', role: quiet ? null : 'group', 'aria-label': quiet ? null : t('棋盤') });
       this.overlay = h('div', { class: 'board-overlay' });
       this.exit = h('div', { class: 'board-exit', 'aria-hidden': 'true' });
       this.bed.append(this.cells, this.layer, this.overlay, this.exit);
@@ -114,22 +116,22 @@
         place(el, this.geo.rect(p.x, p.y, p.w, p.h));
         if (this.kind === 'thumb') return;
         const label = el.firstChild;
-        const text = this.kind === 'edit' ? p.label : HRD.settings.pieceText(p.label);
+        const text = this.kind === 'edit' ? t(p.label) : HRD.settings.pieceText(p.label);
         if (label.textContent !== text) label.textContent = text;
         if (this.kind === 'preview') return;
         el.classList.toggle('is-selected', v.selected === i);
         el.classList.toggle('is-hint', v.hint === i);
         el.classList.toggle('is-dim', !!(v.dim && v.dim.includes(i)));
-        el.setAttribute('aria-label', describe(p) + (v.selected === i ? '，已選取' : ''));
+        el.setAttribute('aria-label', describe(p) + (v.selected === i ? t('，已選取') : ''));
         el.setAttribute('aria-pressed', v.selected === i ? 'true' : 'false');
       });
 
       this.overlay.textContent = '';
       if (v.ghost) {
-        const t = E.TYPES[v.ghost.type];
+        const tt = E.TYPES[v.ghost.type];
         const g = h('div', { class: 'ghost ghost-' + v.ghost.type + (v.ghost.ok ? ' ghost-ok' : ' ghost-bad'), 'aria-hidden': 'true' },
           v.ghost.label ? h('span', { class: 'piece-label', text: v.ghost.label }) : null);
-        place(g, this.geo.rect(v.ghost.x, v.ghost.y, t.w, t.h));
+        place(g, this.geo.rect(v.ghost.x, v.ghost.y, tt.w, tt.h));
         this.overlay.appendChild(g);
       }
       if (v.arrows && v.selected != null) {
@@ -182,7 +184,7 @@
     const rot = { bottom: 0, top: 180, left: 90, right: -90 }[st.exit.side];
     const svg = icon('down', 18);
     svg.style.transform = 'rotate(' + rot + 'deg)';
-    const text = E.isStandard(st) ? '出口' : '出口在' + E.exitText(st);
+    const text = E.isStandard(st) ? t('出口') : t('出口在{exitText}', { exitText: E.exitText(st) });
     return h('div', { class: 'exit-label', 'aria-hidden': 'true' }, svg, text);
   }
 

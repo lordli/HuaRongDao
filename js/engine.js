@@ -4,25 +4,34 @@
  */
 (function (root) {
   'use strict';
+  /* 多語系（js/i18n.js）：瀏覽器裡翻譯，Node 裡直接用原文 */
+  const tr = (s, p) => (root.HRD && root.HRD.i18n ? root.HRD.i18n.t(s, p)
+    : s.replace(/\{(\w+)\}/g, (m, k) => (p && p[k] != null ? String(p[k]) : m)));
+  /* 先回傳原文、顯示時才翻譯的字串（例如檢查結果），用這個標記給 tools/i18n.js 收集 */
+  const N = (s) => s;
 
+  // name 是給畫面看的種類名稱（會翻譯）；label 是棋子預設文字，存進關卡資料（顯示時才翻譯）
   const TYPES = {
-    king: { w: 2, h: 2, ch: 'K', name: '曹操', label: '曹操' },
-    tall: { w: 1, h: 2, ch: 'V', name: '直將', label: '將' },
-    wide: { w: 2, h: 1, ch: 'H', name: '橫將', label: '將' },
-    soldier: { w: 1, h: 1, ch: 'S', name: '小兵', label: '兵' },
+    king: { w: 2, h: 2, ch: 'K', get name() { return tr('曹操'); }, label: '曹操' },
+    tall: { w: 1, h: 2, ch: 'V', get name() { return tr('直將'); }, label: '將' },
+    wide: { w: 2, h: 1, ch: 'H', get name() { return tr('橫將'); }, label: '將' },
+    soldier: { w: 1, h: 1, ch: 'S', get name() { return tr('小兵'); }, label: '兵' },
   };
 
   const DIRS = [
-    { dx: 0, dy: -1, name: 'up', label: '上' },
-    { dx: 0, dy: 1, name: 'down', label: '下' },
-    { dx: -1, dy: 0, name: 'left', label: '左' },
-    { dx: 1, dy: 0, name: 'right', label: '右' },
+    { dx: 0, dy: -1, name: 'up', get label() { return tr('上'); } },
+    { dx: 0, dy: 1, name: 'down', get label() { return tr('下'); } },
+    { dx: -1, dy: 0, name: 'left', get label() { return tr('左'); } },
+    { dx: 1, dy: 0, name: 'right', get label() { return tr('右'); } },
   ];
 
   const STANDARD = { cols: 4, rows: 5, goal: { x: 1, y: 3 }, exit: { side: 'bottom', at: 1 } };
   const LIMITS = { minCols: 3, maxCols: 6, minRows: 4, maxRows: 7 };
   const SIDES = ['bottom', 'top', 'left', 'right'];
-  const SIDE_NAMES = { bottom: '下方', top: '上方', left: '左側', right: '右側' };
+  const SIDE_NAMES = {
+    get bottom() { return tr('下方'); }, get top() { return tr('上方'); },
+    get left() { return tr('左側'); }, get right() { return tr('右側'); },
+  };
 
   /*
    * 出口：在盤面某一邊，寬兩格（曹操的寬度）。
@@ -66,7 +75,9 @@
     const horizontal = e.side === 'bottom' || e.side === 'top';
     const len = horizontal ? st.cols : st.rows;
     const centered = e.at * 2 === len - 2;
-    return SIDE_NAMES[e.side] + (centered ? '中央' : '第 ' + (e.at + 1) + '–' + (e.at + 2) + (horizontal ? ' 欄' : ' 列'));
+    if (centered) return tr('{side}中央', { side: SIDE_NAMES[e.side] });
+    const where = { side: SIDE_NAMES[e.side], from: e.at + 1, to: e.at + 2 };
+    return horizontal ? tr('{side}第 {from}–{to} 欄', where) : tr('{side}第 {from}–{to} 列', where);
   }
   const MAX_LABEL = 6;
 
@@ -97,7 +108,7 @@
     const R = rows.length, C = rows[0].length;
     const boxes = {}, order = [];
     rows.forEach((row, y) => {
-      if (row.length !== C) throw new Error('每一列長度要相同');
+      if (row.length !== C) throw new Error(tr('每一列長度要相同'));
       row.split('').forEach((ch, x) => {
         if (ch === '.') return;
         const b = boxes[ch];
@@ -108,7 +119,7 @@
     const pieces = order.map((ch) => {
       const b = boxes[ch], w = b.x1 - b.x0 + 1, h = b.y1 - b.y0 + 1;
       const type = typeOfSize(w, h);
-      if (!type || b.n !== w * h) throw new Error('「' + ch + '」不是合法的棋子形狀');
+      if (!type || b.n !== w * h) throw new Error(tr('「{ch}」不是合法的棋子形狀', { ch: ch }));
       return makePiece(type, b.x0, b.y0, labels && labels[ch]);
     });
     return makeState(C, R, exit || standardExit(C), pieces);
@@ -192,14 +203,15 @@
   function validate(st) {
     const errors = [], notes = [];
     const kings = st.pieces.filter((p) => p.type === 'king').length;
-    if (!validExit(st.cols, st.rows, st.exit)) errors.push('出口位置不在盤面邊上');
-    if (kings === 0) errors.push('還沒有放曹操');
-    if (kings > 1) errors.push('曹操只能有一個');
+    // 檢查結果回傳原文，畫面顯示時才翻譯（編輯器要用原文判斷哪一條跟曹操有關）
+    if (!validExit(st.cols, st.rows, st.exit)) errors.push(N('出口位置不在盤面邊上'));
+    if (kings === 0) errors.push(N('還沒有放曹操'));
+    if (kings > 1) errors.push(N('曹操只能有一個'));
     let outside = false;
     st.pieces.forEach((p) => {
       if (p.x < 0 || p.y < 0 || p.x + p.w > st.cols || p.y + p.h > st.rows) outside = true;
     });
-    if (outside) errors.push('有棋子超出盤面');
+    if (outside) errors.push(N('有棋子超出盤面'));
     const count = new Int16Array(st.cols * st.rows);
     let overlap = false, filled = 0;
     st.pieces.forEach((p) => {
@@ -210,10 +222,10 @@
         if (c === 1) filled++; else overlap = true;
       }
     });
-    if (overlap) errors.push('有棋子重疊');
+    if (overlap) errors.push(N('有棋子重疊'));
     const empties = st.cols * st.rows - filled;
-    if (empties === 0) errors.push('至少要留一個空格');
-    if (!errors.length && isWon(st)) notes.push('曹操一開始就在出口，不用移動就過關');
+    if (empties === 0) errors.push(N('至少要留一個空格'));
+    if (!errors.length && isWon(st)) notes.push(N('曹操一開始就在出口，不用移動就過關'));
     return { ok: errors.length === 0, errors: errors, notes: notes, kings: kings, empties: empties, pieces: st.pieces.length };
   }
 
@@ -378,33 +390,33 @@
 
   /* 檢查並整理外部匯入的關卡；不合格時丟出錯誤訊息。 */
   function normalizeLevel(raw) {
-    if (!raw || typeof raw !== 'object') throw new Error('不是關卡資料');
-    if (!Array.isArray(raw.pieces) || raw.pieces.length === 0) throw new Error('缺少棋子資料');
-    if (raw.pieces.length > 40) throw new Error('棋子太多');
+    if (!raw || typeof raw !== 'object') throw new Error(tr('不是關卡資料'));
+    if (!Array.isArray(raw.pieces) || raw.pieces.length === 0) throw new Error(tr('缺少棋子資料'));
+    if (raw.pieces.length > 40) throw new Error(tr('棋子太多'));
     const b = raw.board || {};
     const cols = b.cols == null ? STANDARD.cols : b.cols, rows = b.rows == null ? STANDARD.rows : b.rows;
     if (!Number.isInteger(cols) || !Number.isInteger(rows) || cols < LIMITS.minCols || cols > LIMITS.maxCols || rows < LIMITS.minRows || rows > LIMITS.maxRows) {
-      throw new Error('盤面大小要在 ' + LIMITS.minCols + '–' + LIMITS.maxCols + ' 欄、' + LIMITS.minRows + '–' + LIMITS.maxRows + ' 列之間');
+      throw new Error(tr('盤面大小要在 {minCols}–{maxCols} 欄、{minRows}–{maxRows} 列之間', LIMITS));
     }
     let exit = null;
     if (raw.exit) {
-      if (!validExit(cols, rows, raw.exit)) throw new Error('出口位置不正確');
+      if (!validExit(cols, rows, raw.exit)) throw new Error(tr('出口位置不正確'));
       exit = { side: raw.exit.side, at: raw.exit.at };
     } else if (raw.goal) {
       exit = goalToExit(cols, rows, raw.goal);
-      if (!exit) throw new Error('出口位置不正確');
+      if (!exit) throw new Error(tr('出口位置不正確'));
     } else {
       exit = standardExit(cols);
     }
     const pieces = raw.pieces.map((p) => {
-      if (!p || !TYPES[p.type]) throw new Error('有不認得的棋子種類');
-      if (!Number.isInteger(p.x) || !Number.isInteger(p.y)) throw new Error('棋子座標要是整數');
+      if (!p || !TYPES[p.type]) throw new Error(tr('有不認得的棋子種類'));
+      if (!Number.isInteger(p.x) || !Number.isInteger(p.y)) throw new Error(tr('棋子座標要是整數'));
       return makePiece(p.type, p.x, p.y, typeof p.label === 'string' ? p.label : null);
     });
     const st = makeState(cols, rows, exit, pieces);
     const v = validate(st);
-    if (!v.ok) throw new Error(v.errors[0]);
-    const name = typeof raw.name === 'string' && raw.name.trim() ? raw.name.trim().slice(0, 30) : '未命名關卡';
+    if (!v.ok) throw new Error(tr(v.errors[0]));
+    const name = typeof raw.name === 'string' && raw.name.trim() ? raw.name.trim().slice(0, 30) : tr('未命名關卡');
     const difficulty = Number.isInteger(raw.difficulty) && raw.difficulty >= 1 && raw.difficulty <= 5 ? raw.difficulty : null;
     return {
       name: name,

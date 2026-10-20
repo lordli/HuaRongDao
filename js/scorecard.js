@@ -1,6 +1,7 @@
 /* 成績圖卡：用 canvas 畫一張 1080 × 1350 的 PNG（適合手機與社群），一律用淺色配色。 */
 (function (root) {
   'use strict';
+  const t = (s, p) => root.HRD.i18n.t(s, p);
   const HRD = root.HRD;
   const E = HRD.engine;
 
@@ -93,13 +94,26 @@
       ctx.fillStyle = ink;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      const chars = Array.from(p.label);
+      const label = t(p.label);
+      const chars = Array.from(label);
       const cx = px + pw / 2, cy = py + (ph - 7) / 2;
-      if (p.type === 'tall' && chars.length > 1) {
+      // 縮小字級直到放得下
+      const fitTo = (max) => { let s = size; while (s > 10 && ctx.measureText(label).width > max) { s -= 2; ctx.font = '900 ' + s + 'px ' + SERIF; } };
+      const cjk = /[\u3400-\u9fff]/.test(label);
+      if (p.type === 'tall' && chars.length > 1 && cjk) {
         const lh = size * 1.12;
         chars.slice(0, 4).forEach((ch, i, arr) => ctx.fillText(ch, cx, cy + (i - (arr.length - 1) / 2) * lh));
+      } else if (p.type === 'tall' && chars.length > 1) {
+        // 英文名字轉 90 度直著寫
+        ctx.save();
+        ctx.translate(cx, cy);
+        ctx.rotate(Math.PI / 2);
+        fitTo(ph - 7 - 20);
+        ctx.fillText(label, 0, 0);
+        ctx.restore();
       } else {
-        ctx.fillText(p.label, cx, cy);
+        fitTo(pw - 16);
+        ctx.fillText(label, cx, cy);
       }
     });
     return { w: bw + pad * 2, h: bh + pad * 2 };
@@ -111,7 +125,7 @@
    */
   async function render(r) {
     const st = E.levelToState(r.level);
-    await fontsReady(r.level.name + st.pieces.map((p) => p.label).join('') + '華容道過關步數最少用時換你挑戰在貼上分享碼提示次' + (r.subtitle || '') + '0123456789:');
+    await fontsReady(r.level.name + st.pieces.map((p) => t(p.label)).join('') + t('華容道過關步數最少用時換你挑戰在貼上分享碼提示次') + (r.subtitle || '') + '0123456789:');
 
     const canvas = document.createElement('canvas');
     canvas.width = W; canvas.height = H;
@@ -127,11 +141,11 @@
     ctx.font = '900 52px ' + SERIF;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText('華', 114, 108);
+    ctx.fillText(t('華'), 114, 108);
     ctx.fillStyle = C.ink;
     ctx.textAlign = 'left';
     ctx.font = '900 46px ' + SERIF;
-    ctx.fillText('華 容 道', 180, 108);
+    ctx.fillText(t('華 容 道'), 180, 108);
 
     // 過關印章
     ctx.save();
@@ -145,7 +159,7 @@
     ctx.fillStyle = C.kingInk;
     ctx.font = '900 46px ' + SERIF;
     ctx.textAlign = 'center';
-    ctx.fillText('過關', 0, 2);
+    ctx.fillText(t('過關'), 0, 2);
     ctx.restore();
 
     // 關卡名稱與副標
@@ -169,9 +183,9 @@
 
     // 成績
     const cols = [
-      ['步數', String(r.steps)],
-      ['最少', r.minMoves != null ? String(r.minMoves) : '—'],
-      ['用時', HRD.ui.formatTime(r.timeMs)],
+      [t('步數'), String(r.steps)],
+      [t('最少'), r.minMoves != null ? String(r.minMoves) : '—'],
+      [t('用時'), HRD.ui.formatTime(r.timeMs)],
     ];
     cols.forEach((c, i) => {
       const cx = W / 2 + (i - 1) * 300;
@@ -199,7 +213,7 @@
     ctx.textAlign = 'center';
     ctx.fillStyle = C.ink;
     ctx.font = '700 32px ' + SANS;
-    ctx.fillText(r.code ? '換你挑戰！在華容道貼上分享碼：' : '換你挑戰！', W / 2, 1284);
+    ctx.fillText(r.code ? t('換你挑戰！在華容道貼上分享碼：') : t('換你挑戰！'), W / 2, 1284);
     if (r.code) {
       ctx.fillStyle = C.muted;
       fitFont(ctx, r.code, '400', 26, MONO, W - 120, 12);
@@ -207,7 +221,7 @@
     }
 
     return new Promise((resolve, reject) => {
-      canvas.toBlob((b) => (b ? resolve(b) : reject(new Error('圖卡產生失敗'))), 'image/png');
+      canvas.toBlob((b) => (b ? resolve(b) : reject(new Error(t('圖卡產生失敗')))), 'image/png');
     });
   }
 

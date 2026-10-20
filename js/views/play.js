@@ -1,6 +1,7 @@
 /* 遊戲畫面 */
 (function (root) {
   'use strict';
+  const t = (s, p) => root.HRD.i18n.t(s, p);
   const HRD = root.HRD;
   const E = HRD.engine;
   const { h, icon, toast, dialog, confirmDialog, formatTime } = HRD.ui;
@@ -45,52 +46,52 @@
 
     const crumbs = kind === 'draft'
       ? h('div', { class: 'draft-bar' },
-          h('span', { class: 'draft-text' }, icon('edit', 18), '試玩中：這一關還沒儲存'),
-          h('a', { class: 'btn btn-secondary btn-sm', href: '#/edit/' + (ctx.editId || 'new') }, icon('back', 18), '回到編輯器'))
-      : h('nav', { class: 'crumbs', 'aria-label': '目前位置' },
+          h('span', { class: 'draft-text' }, icon('edit', 18), t('試玩中：這一關還沒儲存')),
+          h('a', { class: 'btn btn-secondary btn-sm', href: '#/edit/' + (ctx.editId || 'new') }, icon('back', 18), t('回到編輯器')))
+      : h('nav', { class: 'crumbs', 'aria-label': t('目前位置') },
           kind === 'builtin'
-            ? [h('a', { href: '#/' }, '關卡'), h('span', { 'aria-hidden': 'true' }, '/'), h('span', {}, cat ? cat.name : '')]
-            : kind === 'shared' ? [h('a', { href: '#/s/' + ctx.code }, '朋友分享的關卡')]
-            : kind === 'public' ? [h('a', { href: '#/gallery' }, '關卡廣場')]
-            : [h('a', { href: '#/mine' }, '我的關卡')],
+            ? [h('a', { href: '#/' }, t('關卡')), h('span', { 'aria-hidden': 'true' }, '/'), h('span', {}, cat ? cat.name : '')]
+            : kind === 'shared' ? [h('a', { href: '#/s/' + ctx.code }, t('朋友分享的關卡'))]
+            : kind === 'public' ? [h('a', { href: '#/gallery' }, t('關卡廣場'))]
+            : [h('a', { href: '#/mine' }, t('我的關卡'))],
           h('span', { 'aria-hidden': 'true' }, '/'), h('span', { class: 'crumb-here' }, level.name));
 
     els.bestText = h('span', {});
-    els.bestShare = h('button', { type: 'button', class: 'tile-share', hidden: true, onclick: () => shareBest() }, icon('share', 14), '分享');
+    els.bestShare = h('button', { type: 'button', class: 'tile-share', hidden: true, onclick: () => shareBest() }, icon('share', 14), t('分享'));
     els.best = h('dd', { class: 'tile-best' }, els.bestText, els.bestShare);
     const challenge = ctx.challenge || null;
-    const info = h('section', { class: 'play-info', 'aria-label': '關卡資訊' },
+    const info = h('section', { class: 'play-info', 'aria-label': t('關卡資訊') },
       h('div', { class: 'chips' },
-        h('span', { class: 'chip chip-' + (level.category || 'custom') }, cat ? cat.name : kind === 'draft' ? '試玩' : kind === 'shared' ? '分享' : kind === 'public' ? '廣場' : '自訂'),
+        h('span', { class: 'chip chip-' + (level.category || 'custom') }, cat ? cat.name : kind === 'draft' ? t('試玩') : kind === 'shared' ? t('朋友分享') : kind === 'public' ? t('廣場') : t('自訂')),
         els.dots = HRD.app.dots(level.difficulty || E.difficultyFor(level.minMoves)),
         h('span', { class: 'chips-end' },
           els.soundBtn = h('button', { type: 'button', class: 'icon-btn toggle-btn', onclick: () => toggleSetting('sound') }),
           HRD.fx.canVibrate() ? (els.hapticBtn = h('button', { type: 'button', class: 'icon-btn toggle-btn', onclick: () => toggleSetting('haptics') })) : null,
-          h('button', { type: 'button', class: 'btn btn-secondary btn-sm', onclick: () => HRD.io.shareDialog(level) }, icon('share', 16), '分享'))),
+          h('button', { type: 'button', class: 'btn btn-secondary btn-sm', onclick: () => HRD.io.shareDialog(level) }, icon('share', 16), t('分享')))),
       h('h1', { class: 'play-title' }, level.name),
-      kind === 'public' && level.author ? h('p', { class: 'gallery-author' }, '作者 ', h('a', { href: '#/g/' + ctx.publicId }, level.author)) : null,
-      challenge ? h('p', { class: 'challenge-note' }, icon('flag', 18), '挑戰朋友的成績：' + challenge.steps + ' 步 · ' + formatTime(challenge.timeMs)) : null,
+      kind === 'public' && level.author ? h('p', { class: 'gallery-author' }, t('作者 '), h('a', { href: '#/g/' + ctx.publicId }, level.author)) : null,
+      challenge ? h('p', { class: 'challenge-note' }, icon('flag', 18), t('挑戰朋友的成績：{steps} 步 · {time}', { steps: challenge.steps, time: formatTime(challenge.timeMs) })) : null,
       level.description ? h('p', { class: 'play-desc' }, level.description) : null,
       h('dl', { class: 'tiles' },
-        h('div', { class: 'tile' }, h('dt', {}, '最少步數'), els.min = h('dd', {}, level.minMoves != null ? level.minMoves + ' 步' : kind === 'shared' ? '計算中…' : '—')),
-        h('div', { class: 'tile' }, h('dt', {}, '你的最佳'), els.best)),
-      kind === 'builtin' ? (els.rankLink = h('a', { class: 'rank-link', href: '#/ranking/' + level.id, hidden: true }, icon('trophy', 16), '本關排行榜')) : null,
-      h('div', { class: 'goal-note' }, icon('flag', 20), h('p', {}, h('strong', {}, '目標：'), '把曹操移到' + E.exitText(startState) + '的出口。')),
+        h('div', { class: 'tile' }, h('dt', {}, t('最少步數')), els.min = h('dd', {}, level.minMoves != null ? t('{minMoves} 步', { minMoves: level.minMoves }) : kind === 'shared' ? t('計算中…') : '—')),
+        h('div', { class: 'tile' }, h('dt', {}, t('你的最佳')), els.best)),
+      kind === 'builtin' ? (els.rankLink = h('a', { class: 'rank-link', href: '#/ranking/' + level.id, hidden: true }, icon('trophy', 16), t('本關排行榜'))) : null,
+      h('div', { class: 'goal-note' }, icon('flag', 20), h('p', {}, h('strong', {}, t('目標：')), t('把曹操移到{exitText}的出口。', { exitText: E.exitText(startState) }))),
       h('details', { class: 'howto', open: true },
-        h('summary', {}, '怎麼玩'),
+        h('summary', {}, t('怎麼玩')),
         h('ul', {},
-          h('li', {}, '拖曳或滑動棋子；只能往一個方向走的棋子，點一下就會移動'),
-          h('li', {}, '能走多個方向時，點出現的黃色箭頭'),
-          h('li', {}, '鍵盤：Tab 選棋子，方向鍵移動'),
-          h('li', {}, '同一顆棋子連續移動只算 1 步'),
-          h('li', {}, '用了提示：1–2 次最多 2 星，3 次以上最多 1 星'))));
+          h('li', {}, t('拖曳或滑動棋子；只能往一個方向走的棋子，點一下就會移動')),
+          h('li', {}, t('能走多個方向時，點出現的黃色箭頭')),
+          h('li', {}, t('鍵盤：Tab 選棋子，方向鍵移動')),
+          h('li', {}, t('同一顆棋子連續移動只算 1 步')),
+          h('li', {}, t('用了提示：1–2 次最多 2 星，3 次以上最多 1 星')))));
 
     els.status = h('p', { class: 'play-status', 'aria-live': 'polite' });
-    const stage = h('section', { class: 'play-stage', 'aria-label': '棋盤' },
+    const stage = h('section', { class: 'play-stage', 'aria-label': t('棋盤') },
       h('p', { class: 'stage-stats', 'aria-hidden': 'true' },
-        h('span', {}, '步數 ', els.mSteps = h('strong', {})),
-        h('span', {}, '時間 ', els.mTime = h('strong', {})),
-        level.minMoves != null || kind === 'shared' ? h('span', {}, '最少 ', els.mMin = h('strong', {})) : null),
+        h('span', {}, t('步數 '), els.mSteps = h('strong', {})),
+        h('span', {}, t('時間 '), els.mTime = h('strong', {})),
+        level.minMoves != null || kind === 'shared' ? h('span', {}, t('最少 '), els.mMin = h('strong', {})) : null),
       h('div', { class: 'board-wrap' }, board.el),
       HRD.exitLabel(startState),
       els.status);
@@ -98,10 +99,10 @@
     els.steps = h('span', { class: 'stat-value' });
     els.time = h('span', { class: 'stat-value' });
     const btn = (name, label, onClick, cls) => h('button', { type: 'button', class: 'btn ' + (cls || 'btn-tool'), onclick: onClick }, icon(name, 20), h('span', {}, label));
-    els.undo = btn('undo', '復原', () => undo());
-    els.redo = btn('redo', '重做', () => redo());
-    els.reset = btn('restart', '重新開始', () => restart());
-    els.hint = btn('hint', '提示', () => doHint(), 'btn-outline');
+    els.undo = btn('undo', t('復原'), () => undo());
+    els.redo = btn('redo', t('重做'), () => redo());
+    els.reset = btn('restart', t('重新開始'), () => restart());
+    els.hint = btn('hint', t('提示'), () => doHint(), 'btn-outline');
     els.hintCount = h('span', { class: 'hint-count', 'aria-hidden': 'true', hidden: true });
     els.hint.appendChild(els.hintCount);
     els.autoIcon = h('span', { class: 'auto-icon' });
@@ -113,20 +114,20 @@
       b.firstChild.style.transform = 'rotate(' + rot + 'deg)';
       return b;
     };
-    els.dUp = dpadBtn(0, -1, '往上移', 0, 'u');
-    els.dLeft = dpadBtn(-1, 0, '往左移', 270, 'l');
-    els.dRight = dpadBtn(1, 0, '往右移', 90, 'r');
-    els.dDown = dpadBtn(0, 1, '往下移', 180, 'd');
+    els.dUp = dpadBtn(0, -1, t('往上移'), 0, 'u');
+    els.dLeft = dpadBtn(-1, 0, t('往左移'), 270, 'l');
+    els.dRight = dpadBtn(1, 0, t('往右移'), 90, 'r');
+    els.dDown = dpadBtn(0, 1, t('往下移'), 180, 'd');
     els.selName = h('strong', {});
 
-    const controls = h('section', { class: 'play-controls', 'aria-label': '控制' },
+    const controls = h('section', { class: 'play-controls', 'aria-label': t('控制') },
       h('div', { class: 'stats' },
-        h('div', { class: 'stat' }, h('span', { class: 'stat-label' }, '步數'), els.steps),
-        h('div', { class: 'stat' }, h('span', { class: 'stat-label' }, '時間'), els.time)),
+        h('div', { class: 'stat' }, h('span', { class: 'stat-label' }, t('步數')), els.steps),
+        h('div', { class: 'stat' }, h('span', { class: 'stat-label' }, t('時間')), els.time)),
       h('div', { class: 'tool-row' }, els.undo, els.redo, els.reset),
       h('div', { class: 'tool-row tool-row-2' }, els.hint, els.auto),
       h('div', { class: 'dpad-card' },
-        h('div', { class: 'dpad-head' }, h('h2', {}, '方向鍵'), h('span', {}, '已選取：', els.selName)),
+        h('div', { class: 'dpad-head' }, h('h2', {}, t('方向鍵')), h('span', {}, t('已選取：'), els.selName)),
         h('div', { class: 'dpad' }, els.dUp, els.dLeft, h('span', { class: 'dpad-mid', style: { gridArea: 'm' } }), els.dRight, els.dDown)));
 
     container.appendChild(h('div', { class: 'page play-page' }, crumbs, h('div', { class: 'play-layout' }, info, stage, controls)));
@@ -182,7 +183,7 @@
       const on = HRD.store.setting(name) !== false;
       HRD.store.setSetting(name, !on);
       if (!on) { HRD.fx.unlock(); if (name === 'sound') HRD.fx.select(); }
-      toast(name === 'sound' ? (on ? '已關閉音效' : '已開啟音效') : (on ? '已關閉震動' : '已開啟震動'));
+      toast(name === 'sound' ? (on ? t('已關閉音效') : t('已開啟音效')) : (on ? t('已關閉震動') : t('已開啟震動')));
       render();
     }
 
@@ -224,7 +225,7 @@
     async function restart() {
       if (busy) return;
       if (hist.length && !won) {
-        const ok = await confirmDialog('重新開始？', '目前已走 ' + hist.length + ' 步，重新開始後這局的進度會清除。', '重新開始', true);
+        const ok = await confirmDialog(t('重新開始？'), t('目前已走 {n} 步，重新開始後這局的進度會清除。', { n: hist.length }), t('重新開始'), true);
         if (!ok) return;
       }
       stopAuto();
@@ -274,9 +275,9 @@
     }
 
     function explain(res) {
-      if (res.status === 'unsolvable') return '從目前的盤面已經走不到出口，按「重新開始」再試一次。';
-      if (res.status === 'too-big') return '這個盤面變化太多，提示算不出來。';
-      return '目前沒辦法提供提示。';
+      if (res.status === 'unsolvable') return t('從目前的盤面已經走不到出口，按「重新開始」再試一次。');
+      if (res.status === 'too-big') return t('這個盤面變化太多，提示算不出來。');
+      return t('目前沒辦法提供提示。');
     }
 
     async function doHint() {
@@ -296,7 +297,7 @@
       hintsUsed++;
       persist(false);
       HRD.fx.hint();
-      if (hintsUsed === 1 || hintsUsed === 3) toast('用了 ' + hintsUsed + ' 次提示，這局最多 ' + E.hintCap(hintsUsed) + ' 星');
+      if (hintsUsed === 1 || hintsUsed === 3) toast(t('用了 {hintsUsed} 次提示，這局最多 {hintCap} 星', { hintsUsed, hintCap: E.hintCap(hintsUsed) }));
       render();
       const b = board.pieceButton(step.piece);
       if (b) b.focus({ preventScroll: true });
@@ -341,44 +342,44 @@
     }
 
     function subtitle() {
-      if (kind === 'builtin') return (cat ? cat.name : '') + '關卡';
-      if (kind === 'shared') return '朋友分享的關卡';
-      if (kind === 'public') return '關卡廣場' + (level.author ? ' · ' + level.author + ' 設計' : '');
-      if (kind === 'draft') return '自製關卡（試玩）';
-      return '自製關卡';
+      if (kind === 'builtin') return t('{text}關卡', { text: cat ? cat.name : '' });
+      if (kind === 'shared') return t('朋友分享的關卡');
+      if (kind === 'public') return t('關卡廣場{text}', { text: level.author ? t(' · {author} 設計', { author: level.author }) : '' });
+      if (kind === 'draft') return t('自製關卡（試玩）');
+      return t('自製關卡');
     }
 
     function compareNote(steps, ms) {
       const d = steps - challenge.steps;
-      if (d < 0) return h('p', { class: 'win-best' }, '比朋友少 ' + (-d) + ' 步，挑戰成功！');
-      if (d === 0) return h('p', { class: ms < challenge.timeMs ? 'win-best' : 'win-sub' }, ms < challenge.timeMs ? '和朋友一樣 ' + steps + ' 步，而且比較快！' : '和朋友一樣都是 ' + steps + ' 步。');
-      return h('p', { class: 'win-sub' }, '比朋友多 ' + d + ' 步，再試一次看看？');
+      if (d < 0) return h('p', { class: 'win-best' }, t('比朋友少 {n} 步，挑戰成功！', { n: -d }));
+      if (d === 0) return h('p', { class: ms < challenge.timeMs ? 'win-best' : 'win-sub' }, ms < challenge.timeMs ? t('和朋友一樣 {steps} 步，而且比較快！', { steps }) : t('和朋友一樣都是 {steps} 步。', { steps }));
+      return h('p', { class: 'win-sub' }, t('比朋友多 {d} 步，再試一次看看？', { d }));
     }
 
     /* 關卡廣場的關卡：把成績送上去，結果出來再補一行字 */
     function galleryNote(steps, ms) {
-      const line = h('p', { class: 'win-sub', role: 'status' }, '正在記錄到關卡廣場…');
+      const line = h('p', { class: 'win-sub', role: 'status' }, t('正在記錄到關卡廣場…'));
       HRD.gallery.submitRecord(ctx.publicId, { steps: steps, timeMs: ms, hints: hintsUsed }).then((r) => {
-        line.textContent = r.status === 'signed-out' ? '登入後過關，成績就會列進這一關的最佳紀錄。'
-          : r.status === 'first' ? '已記錄到關卡廣場，你是第 ' + r.clears + ' 位過關的玩家！'
-          : r.status === 'better' ? '已更新你在關卡廣場的最佳紀錄。'
-          : '關卡廣場保留你之前比較好的紀錄。';
+        line.textContent = r.status === 'signed-out' ? t('登入後過關，成績就會列進這一關的最佳紀錄。')
+          : r.status === 'first' ? t('已記錄到關卡廣場，你是第 {clears} 位過關的玩家！', { clears: r.clears })
+          : r.status === 'better' ? t('已更新你在關卡廣場的最佳紀錄。')
+          : t('關卡廣場保留你之前比較好的紀錄。');
         if (r.status === 'first' || r.status === 'better') line.className = 'win-best';
-      }, (e) => { line.textContent = '成績沒有記錄到關卡廣場：' + HRD.gallery.errorText(e); });
+      }, (e) => { line.textContent = t('成績沒有記錄到關卡廣場：{errorText}', { errorText: HRD.gallery.errorText(e) }); });
       return line;
     }
 
     /* 內建關卡：把成績送到排行榜（沒用提示才算） */
     function rankNote(ms) {
-      const line = h('p', { class: 'win-sub', role: 'status' }, '正在記錄到排行榜…');
+      const line = h('p', { class: 'win-sub', role: 'status' }, t('正在記錄到排行榜…'));
       HRD.ranking.submit(level.id, { hist: hist.slice(), timeMs: ms, hints: hintsUsed, auto: autoUsed }).then((r) => {
-        const at = r.rank ? '這一關第 ' + r.rank + ' 名' : '';
-        line.textContent = r.status === 'hints' ? '這局用了提示，不列入排行榜。不用提示再挑戰一次吧！'
-          : r.status === 'signed-out' ? '登入後不用提示過關，成績就會列入排行榜。'
-          : r.status === 'first' || r.status === 'better' ? '已列入排行榜' + (at ? '：' + at + '！' : '！')
-          : '排行榜保留你之前比較好的成績' + (at ? '（' + at + '）' : '') + '。';
+        const listed = r.status === 'first' || r.status === 'better';
+        line.textContent = r.status === 'hints' ? t('這局用了提示，不列入排行榜。不用提示再挑戰一次吧！')
+          : r.status === 'signed-out' ? t('登入後不用提示過關，成績就會列入排行榜。')
+          : listed ? (r.rank ? t('已列入排行榜：這一關第 {rank} 名！', { rank: r.rank }) : t('已列入排行榜！'))
+          : r.rank ? t('排行榜保留你之前比較好的成績（這一關第 {rank} 名）。', { rank: r.rank }) : t('排行榜保留你之前比較好的成績。');
         if (r.status === 'first' || r.status === 'better') line.className = 'win-best';
-      }, (e) => { line.textContent = '成績沒有記錄到排行榜：' + HRD.gallery.errorText(e); });
+      }, (e) => { line.textContent = t('成績沒有記錄到排行榜：{errorText}', { errorText: HRD.gallery.errorText(e) }); });
       return line;
     }
 
@@ -386,58 +387,57 @@
       const p = key ? HRD.store.progress(key) : null;
       if (!p || p.bestSteps == null) return;
       const hints = p.bestHints || 0;
-      HRD.io.scoreDialog({ level: level, steps: p.bestSteps, timeMs: p.bestTime, stars: E.starsFor(p.bestSteps, level.minMoves, hints), hints: hints, subtitle: subtitle() + ' · 最佳成績' });
+      HRD.io.scoreDialog({ level: level, steps: p.bestSteps, timeMs: p.bestTime, stars: E.starsFor(p.bestSteps, level.minMoves, hints), hints: hints, subtitle: t('{subtitle} · 最佳成績', { subtitle: subtitle() }) });
     }
 
     function showWin(steps, ms, stars, newBest) {
-      const starRow = h('div', { class: 'stars', role: 'img', 'aria-label': (autoUsed ? 0 : stars) + ' 顆星（滿分 3）' });
+      const starRow = h('div', { class: 'stars', role: 'img', 'aria-label': t('{text} 顆星（滿分 3）', { text: autoUsed ? 0 : stars }) });
       for (let n = 1; n <= 3; n++) starRow.appendChild(icon('star', 34, !autoUsed && n <= stars ? 'star-on' : 'star-off'));
       let note;
       const noHintStars = E.starsFor(steps, level.minMoves, 0);
-      if (autoUsed) note = '這次是自動解題完成的，不列入紀錄。自己挑戰看看吧！';
+      if (autoUsed) note = t('這次是自動解題完成的，不列入紀錄。自己挑戰看看吧！');
       else if (hintsUsed) {
-        note = '這局用了 ' + hintsUsed + ' 次提示，最多 ' + E.hintCap(hintsUsed) + ' 星。'
-          + (noHintStars > stars ? '不用提示的話，這個步數可以拿 ' + noHintStars + ' 星！' : '');
+        note = t('這局用了 {hintsUsed} 次提示，最多 {hintCap} 星。{text}', { hintsUsed, hintCap: E.hintCap(hintsUsed), text: noHintStars > stars ? t('不用提示的話，這個步數可以拿 {noHintStars} 星！', { noHintStars }) : '' });
       }
-      else if (level.minMoves != null && steps <= level.minMoves) note = '達到最少步數，拿下三星！';
-      else if (level.minMoves != null) note = '再少 ' + (steps - level.minMoves) + ' 步就能拿到三星。';
+      else if (level.minMoves != null && steps <= level.minMoves) note = t('達到最少步數，拿下三星！');
+      else if (level.minMoves != null) note = t('再少 {n} 步就能拿到三星。', { n: steps - level.minMoves });
       else note = '';
       const actions = [];
       const shareAction = autoUsed ? null : {
-        label: '分享成績',
+        label: t('分享成績'),
         onClick: () => { HRD.io.scoreDialog({ level: level, steps: steps, timeMs: ms, stars: stars, hints: hintsUsed, subtitle: subtitle() }); return false; },
       };
       if (kind === 'draft') {
-        actions.push({ label: '回到編輯器', primary: true, value: 'edit' });
+        actions.push({ label: t('回到編輯器'), primary: true, value: 'edit' });
         if (shareAction) actions.push(shareAction);
-        actions.push({ label: '再玩一次', value: 'again' });
+        actions.push({ label: t('再玩一次'), value: 'again' });
       } else if (kind === 'public') {
-        actions.push({ label: '再玩一次', value: 'again', primary: true });
+        actions.push({ label: t('再玩一次'), value: 'again', primary: true });
         if (shareAction) actions.push(shareAction);
-        actions.push({ label: '查看這一關', value: 'public' });
-        actions.push({ label: '回關卡廣場', value: 'gallery' });
+        actions.push({ label: t('查看這一關'), value: 'public' });
+        actions.push({ label: t('回關卡廣場'), value: 'gallery' });
       } else if (kind === 'shared') {
-        actions.push({ label: '再玩一次', value: 'again', primary: true });
+        actions.push({ label: t('再玩一次'), value: 'again', primary: true });
         if (shareAction) actions.push(shareAction);
-        actions.push({ label: '查看這一關', value: 'shared' });
-        actions.push({ label: '回首頁', value: 'home' });
+        actions.push({ label: t('查看這一關'), value: 'shared' });
+        actions.push({ label: t('回首頁'), value: 'home' });
       } else {
-        if (ctx.nextKey) actions.push({ label: '下一關：' + ctx.nextName, primary: true, value: 'next' });
+        if (ctx.nextKey) actions.push({ label: t('下一關：{nextName}', { nextName: ctx.nextName }), primary: true, value: 'next' });
         if (shareAction) actions.push(shareAction);
-        actions.push({ label: '再玩一次', value: 'again', primary: !ctx.nextKey });
-        actions.push({ label: kind === 'builtin' ? '回關卡列表' : '回我的關卡', value: 'list' });
+        actions.push({ label: t('再玩一次'), value: 'again', primary: !ctx.nextKey });
+        actions.push({ label: kind === 'builtin' ? t('回關卡列表') : t('回我的關卡'), value: 'list' });
       }
       dialog({
-        title: autoUsed ? '解題完成' : '曹操脫逃成功！',
+        title: autoUsed ? t('解題完成') : t('曹操脫逃成功！'),
         body: h('div', { class: 'win' },
-          h('span', { class: 'seal', 'aria-hidden': 'true' }, '過關'),
+          h('span', { class: 'seal', 'aria-hidden': 'true' }, t('過關')),
           h('dl', { class: 'win-stats' },
-            h('div', {}, h('dt', {}, '步數'), h('dd', {}, String(steps))),
-            h('div', {}, h('dt', {}, '最少'), h('dd', {}, level.minMoves != null ? String(level.minMoves) : '—')),
-            h('div', {}, h('dt', {}, '用時'), h('dd', {}, formatTime(ms)))),
+            h('div', {}, h('dt', {}, t('步數')), h('dd', {}, String(steps))),
+            h('div', {}, h('dt', {}, t('最少')), h('dd', {}, level.minMoves != null ? String(level.minMoves) : '—')),
+            h('div', {}, h('dt', {}, t('用時')), h('dd', {}, formatTime(ms)))),
           starRow,
           note ? h('p', { class: 'win-note' }, note) : null,
-          newBest && progress && progress.bestSteps != null ? h('p', { class: 'win-best' }, '新紀錄！比上次少了 ' + (progress.bestSteps - steps) + ' 步') : null,
+          newBest && progress && progress.bestSteps != null ? h('p', { class: 'win-best' }, t('新紀錄！比上次少了 {n} 步', { n: progress.bestSteps - steps })) : null,
           challenge && !autoUsed ? compareNote(steps, ms) : null,
           kind === 'public' && !autoUsed ? galleryNote(steps, ms) : null,
           kind === 'builtin' && !autoUsed && HRD.ranking.available() ? rankNote(ms) : null),
@@ -474,7 +474,7 @@
         const name = st.pieces[sel].label;
         arrows = E.openDirs(st, sel).map((d) => ({
           dx: d.dx, dy: d.dy, hot: !!hotDir && hotDir[0] === d.dx && hotDir[1] === d.dy,
-          label: '把' + name + '往' + d.label + '移',
+          label: t('把{name}往{label}移', { name, label: d.label }),
         }));
       }
       const ghost = hint && !playing ? { type: st.pieces[hint.piece].type, x: hint.x, y: hint.y, ok: true } : null;
@@ -488,15 +488,15 @@
       els.soundBtn.textContent = '';
       els.soundBtn.appendChild(icon(soundOn ? 'volume' : 'mute', 20));
       els.soundBtn.setAttribute('aria-pressed', soundOn ? 'true' : 'false');
-      els.soundBtn.setAttribute('aria-label', '音效');
-      els.soundBtn.title = soundOn ? '音效：開' : '音效：關';
+      els.soundBtn.setAttribute('aria-label', t('音效'));
+      els.soundBtn.title = soundOn ? t('音效：開') : t('音效：關');
       if (els.hapticBtn) {
         const hapOn = HRD.store.setting('haptics') !== false;
         els.hapticBtn.textContent = '';
         els.hapticBtn.appendChild(icon(hapOn ? 'vibrate' : 'vibrateOff', 20));
         els.hapticBtn.setAttribute('aria-pressed', hapOn ? 'true' : 'false');
-        els.hapticBtn.setAttribute('aria-label', '震動');
-        els.hapticBtn.title = hapOn ? '震動：開' : '震動：關';
+        els.hapticBtn.setAttribute('aria-label', t('震動'));
+        els.hapticBtn.title = hapOn ? t('震動：開') : t('震動：關');
       }
       els.undo.disabled = !hist.length || playing || !!busy;
       els.redo.disabled = !fut.length || playing || !!busy;
@@ -504,12 +504,12 @@
       els.hint.disabled = !canMove;
       els.hintCount.hidden = !hintsUsed;
       els.hintCount.textContent = String(hintsUsed);
-      els.hint.setAttribute('aria-label', hintsUsed ? '提示（已用 ' + hintsUsed + ' 次）' : '提示');
-      els.hint.title = hintsUsed ? '已用 ' + hintsUsed + ' 次提示，這局最多 ' + E.hintCap(hintsUsed) + ' 星' : '用了提示，這局最多 2 星';
+      els.hint.setAttribute('aria-label', hintsUsed ? t('提示（已用 {hintsUsed} 次）', { hintsUsed }) : t('提示'));
+      els.hint.title = hintsUsed ? t('已用 {hintsUsed} 次提示，這局最多 {hintCap} 星', { hintsUsed, hintCap: E.hintCap(hintsUsed) }) : t('用了提示，這局最多 2 星');
       els.auto.disabled = won || (!!busy && !playing);
       els.autoIcon.textContent = '';
       els.autoIcon.appendChild(icon(playing ? 'pause' : 'play', 18));
-      els.autoLabel.textContent = playing ? '停止演示' : '自動解題';
+      els.autoLabel.textContent = playing ? t('停止演示') : t('自動解題');
       els.auto.setAttribute('aria-pressed', playing ? 'true' : 'false');
 
       const open = sel != null && canMove ? E.openDirs(st, sel).map((d) => d.name) : [];
@@ -517,31 +517,31 @@
       els.dDown.disabled = !open.includes('down');
       els.dLeft.disabled = !open.includes('left');
       els.dRight.disabled = !open.includes('right');
-      els.selName.textContent = sel != null ? st.pieces[sel].label : '尚未選取';
+      els.selName.textContent = sel != null ? st.pieces[sel].label : t('尚未選取');
 
       const p = key ? HRD.store.progress(key) : null;
-      els.bestText.textContent = p && p.bestSteps != null ? p.bestSteps + ' 步 · ' + formatTime(p.bestTime) : '—';
+      els.bestText.textContent = p && p.bestSteps != null ? t('{bestSteps} 步 · {time}', { bestSteps: p.bestSteps, time: formatTime(p.bestTime) }) : '—';
       els.bestShare.hidden = !(p && p.bestSteps != null);
 
       let msg;
-      if (playing) msg = '自動解題中…按「停止演示」可以暫停。';
-      else if (busy) msg = '正在計算最佳走法…';
-      else if (won) msg = autoUsed ? '解題完成。' : '過關！曹操從出口脫逃了。';
-      else if (hint) msg = '提示：把「' + st.pieces[hint.piece].label + '」移到虛線框的位置。（已用 ' + hintsUsed + ' 次提示，最多 ' + E.hintCap(hintsUsed) + ' 星）';
-      else if (sel != null && arrows && arrows.length) msg = '已選取「' + st.pieces[sel].label + '」：' + (HRD.fx.touchDevice() ? '往要去的方向滑動，或點黃色箭頭。' : '拖曳、點黃色箭頭或按方向鍵移動。');
-      else if (sel != null) msg = '「' + st.pieces[sel].label + '」旁邊沒有空位，換一顆試試。';
-      else if (restored) msg = '已接續上次的進度。';
-      else if (!HRD.settings.get('tapMove')) msg = HRD.fx.touchDevice() ? '在棋子上往要去的方向滑一下就會移動，或點棋子再點黃色箭頭。' : '點選或拖曳棋子開始。';
-      else msg = HRD.fx.touchDevice() ? '在棋子上往要去的方向滑一下就會移動。只能往一個方向走的棋子，點一下也可以。' : '點選或拖曳棋子開始。只能往一個方向走的棋子，點一下就會移動。';
+      if (playing) msg = t('自動解題中…按「停止演示」可以暫停。');
+      else if (busy) msg = t('正在計算最佳走法…');
+      else if (won) msg = autoUsed ? t('解題完成。') : t('過關！曹操從出口脫逃了。');
+      else if (hint) msg = t('提示：把「{label}」移到虛線框的位置。（已用 {hintsUsed} 次提示，最多 {hintCap} 星）', { label: st.pieces[hint.piece].label, hintsUsed, hintCap: E.hintCap(hintsUsed) });
+      else if (sel != null && arrows && arrows.length) msg = t('已選取「{label}」：{text}', { label: st.pieces[sel].label, text: HRD.fx.touchDevice() ? t('往要去的方向滑動，或點黃色箭頭。') : t('拖曳、點黃色箭頭或按方向鍵移動。') });
+      else if (sel != null) msg = t('「{label}」旁邊沒有空位，換一顆試試。', { label: st.pieces[sel].label });
+      else if (restored) msg = t('已接續上次的進度。');
+      else if (!HRD.settings.get('tapMove')) msg = HRD.fx.touchDevice() ? t('在棋子上往要去的方向滑一下就會移動，或點棋子再點黃色箭頭。') : t('點選或拖曳棋子開始。');
+      else msg = HRD.fx.touchDevice() ? t('在棋子上往要去的方向滑一下就會移動。只能往一個方向走的棋子，點一下也可以。') : t('點選或拖曳棋子開始。只能往一個方向走的棋子，點一下就會移動。');
       if (els.status.textContent !== msg) els.status.textContent = msg;
     }
 
     /* ---------- 操作：拖曳、點擊、鍵盤 ---------- */
     board.bed.addEventListener('pointerdown', (e) => {
-      const t = e.target.closest('.piece');
-      if (!t || !userCanMove() || (e.pointerType === 'mouse' && e.button !== 0)) return;
-      drag = { i: Number(t.dataset.i), x: e.clientX, y: e.clientY, x0: e.clientX, y0: e.clientY, t0: Date.now(), moved: false, bumped: false, touch: e.pointerType !== 'mouse', id: e.pointerId };
-      try { t.setPointerCapture(e.pointerId); } catch (err) { /* 舊瀏覽器 */ }
+      const tt = e.target.closest('.piece');
+      if (!tt || !userCanMove() || (e.pointerType === 'mouse' && e.button !== 0)) return;
+      drag = { i: Number(tt.dataset.i), x: e.clientX, y: e.clientY, x0: e.clientX, y0: e.clientY, t0: Date.now(), moved: false, bumped: false, touch: e.pointerType !== 'mouse', id: e.pointerId };
+      try { tt.setPointerCapture(e.pointerId); } catch (err) { /* 舊瀏覽器 */ }
     });
     board.bed.addEventListener('pointermove', (e) => {
       if (!drag || e.pointerId !== drag.id) return;
@@ -587,19 +587,19 @@
         if (sel != null && userCanMove()) move(sel, Number(arrow.dataset.dx), Number(arrow.dataset.dy));
         return;
       }
-      const t = e.target.closest('.piece');
-      if (!t) return;
+      const tt = e.target.closest('.piece');
+      if (!tt) return;
       if (suppressClick) { suppressClick = false; return; }
-      tap(Number(t.dataset.i));
+      tap(Number(tt.dataset.i));
     });
     board.bed.addEventListener('keydown', (e) => {
-      const t = e.target.closest('.piece');
+      const tt = e.target.closest('.piece');
       if (e.key === 'Escape') { sel = null; hint = null; render(); return; }
-      if (!t) return;
+      if (!tt) return;
       const d = { ArrowUp: [0, -1], ArrowDown: [0, 1], ArrowLeft: [-1, 0], ArrowRight: [1, 0] }[e.key];
       if (!d) return;
       e.preventDefault();
-      const i = Number(t.dataset.i);
+      const i = Number(tt.dataset.i);
       if (!userCanMove()) return;
       if (!move(i, d[0], d[1])) { sel = i; HRD.fx.blocked(); render(); }
       const b = board.pieceButton(i);
@@ -624,11 +624,11 @@
         if (minToken.aborted) return;
         if (r.status === 'solved') {
           level.minMoves = r.minMoves;
-          els.min.textContent = r.minMoves + ' 步';
+          els.min.textContent = t('{minMoves} 步', { minMoves: r.minMoves });
           if (els.mMin) els.mMin.textContent = String(r.minMoves);
           if (!level.difficulty) els.dots.replaceWith(els.dots = HRD.app.dots(E.difficultyFor(r.minMoves)));
         } else {
-          els.min.textContent = r.status === 'unsolvable' ? '無解' : '—';
+          els.min.textContent = r.status === 'unsolvable' ? t('無解') : '—';
         }
       });
     }

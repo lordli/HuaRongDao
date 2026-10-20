@@ -1,11 +1,16 @@
 {
   "name": "huarongdao",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "description": "華容道網頁遊戲：內建關卡、關卡編輯器、儲存與匯出匯入",
   "private": true,
   "scripts": {
-    "test": "node --test tests/engine.test.js tests/share.test.js tests/store.test.js tests/gallery.test.js tests/ranking.test.js",
+    "test": "node --test tests/engine.test.js tests/share.test.js tests/store.test.js tests/gallery.test.js tests/ranking.test.js tests/i18n.test.js",
     "start": "npx http-server -c-1 -p 8080 .",
-    "build:single": "node tools/build-single.js"
+    "build:single": "node tools/build-single.js",
+    "i18n": "node tools/i18n.js",
+    "i18n:hans": "node tools/i18n.js --hans"
+  },
+  "devDependencies": {
+    "opencc-js": "1.0.5"
   }
 }

@@ -1,6 +1,7 @@
 /* 共用的 DOM 小工具：建元素、圖示、對話框、提示訊息、檔案下載。 */
 (function (root) {
   'use strict';
+  const t = (s, p) => root.HRD.i18n.t(s, p);
 
   function append(el, kids) {
     for (const k of kids) {
@@ -133,12 +134,12 @@
       const close = (v) => { result = v; d.close(); };
       const head = h('div', { class: 'dialog-head' },
         h('h2', { id: titleId, class: 'dialog-title', text: opts.title }),
-        h('button', { type: 'button', class: 'icon-btn ghost', 'aria-label': '關閉', onclick: () => close(null) }, icon('x', 22)));
+        h('button', { type: 'button', class: 'icon-btn ghost', 'aria-label': t('關閉'), onclick: () => close(null) }, icon('x', 22)));
       const body = h('div', { class: 'dialog-body' });
       if (opts.message) body.appendChild(h('p', { class: 'dialog-text', text: opts.message }));
       if (opts.body) append(body, [typeof opts.body === 'function' ? opts.body(close) : opts.body]);
       const foot = h('div', { class: 'dialog-foot' });
-      (opts.actions || [{ label: '好', value: true, primary: true }]).forEach((a) => {
+      (opts.actions || [{ label: t('好'), value: true, primary: true }]).forEach((a) => {
         foot.appendChild(h('button', {
           type: 'button',
           'data-action': a.id || null,
@@ -165,8 +166,8 @@
       title: title,
       message: message,
       actions: [
-        { label: '取消', value: false },
-        { label: okLabel || '確定', value: true, primary: !danger, danger: !!danger },
+        { label: t('取消'), value: false },
+        { label: okLabel || t('確定'), value: true, primary: !danger, danger: !!danger },
       ],
     }).then((v) => v === true);
   }
@@ -175,11 +176,11 @@
   async function copyText(text, fallbackEl) {
     try {
       await navigator.clipboard.writeText(text);
-      toast('已複製到剪貼簿');
+      toast(t('已複製到剪貼簿'));
       return true;
     } catch (e) {
       if (fallbackEl) { fallbackEl.focus(); fallbackEl.select(); }
-      toast('沒辦法自動複製，已幫你選取文字，請按 Ctrl+C（或長按）複製');
+      toast(t('沒辦法自動複製，已幫你選取文字，請按 Ctrl+C（或長按）複製'));
       return false;
     }
   }
@@ -225,7 +226,7 @@
     if (!ts) return '';
     const d = new Date(ts), now = new Date();
     const hm = String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
-    if (d.toDateString() === now.toDateString()) return '今天 ' + hm;
+    if (d.toDateString() === now.toDateString()) return t('今天 {hm}', { hm });
     return (d.getMonth() + 1) + '/' + d.getDate();
   }
 

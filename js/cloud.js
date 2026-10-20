@@ -8,6 +8,7 @@
  */
 (function (root) {
   'use strict';
+  const t = (s, p) => root.HRD.i18n.t(s, p);
   const HRD = root.HRD;
   const store = HRD.store;
   const { h, toast, dialog, confirmDialog } = HRD.ui;
@@ -35,35 +36,38 @@
   }
 
   /* ---------- 錯誤訊息 ---------- */
+  // 錯誤訊息表：用 N() 標記原文，取用時才翻譯（見 errorText）
+  const N = (s) => s;
   const ERRORS = {
-    'auth/invalid-email': '電子郵件格式不對。',
-    'auth/missing-email': '請輸入電子郵件。',
-    'auth/missing-password': '請輸入密碼。',
-    'auth/weak-password': '密碼太短，至少要 6 個字元。',
-    'auth/email-already-in-use': '這個電子郵件已經註冊過了，請直接登入。',
-    'auth/invalid-credential': '電子郵件或密碼不對。',
-    'auth/invalid-login-credentials': '電子郵件或密碼不對。',
-    'auth/wrong-password': '密碼不對。',
-    'auth/user-not-found': '找不到這個帳號。',
-    'auth/user-disabled': '這個帳號已經停用。',
-    'auth/too-many-requests': '嘗試太多次了，請過幾分鐘再試。',
-    'auth/network-request-failed': '連不上網路，請確認連線後再試一次。',
-    'auth/internal-error': '登入時發生問題。請確認網路連線，或暫時關掉擋廣告的擴充功能後再試一次。',
-    'auth/popup-blocked': '瀏覽器擋住了登入視窗，請允許這個網站開啟彈出式視窗後再試一次。',
-    'auth/operation-not-allowed': '這個登入方式還沒開啟，網站管理者需要到 Firebase 主控台啟用。',
-    'auth/unauthorized-domain': '這個網址還不能登入，網站管理者需要把網域加進 Firebase 的授權網域。',
-    'auth/account-exists-with-different-credential': '這個電子郵件已經用其他方式註冊，請改用原本的方式登入。',
-    'auth/requires-recent-login': '為了安全，請重新登入後再試一次。',
-    'auth/user-mismatch': '請用目前這個帳號重新登入。',
-    'permission-denied': '沒有權限讀寫雲端資料，網站管理者需要部署 Firestore 規則。',
-    'failed-precondition': '雲端資料庫還沒建立好，網站管理者需要建立 Firestore 資料庫。',
-    'resource-exhausted': '今天的雲端用量已達上限，明天會自動恢復。',
-    'too-big': '資料太多，雲端存不下；可以刪掉一些自訂關卡後再試。',
+    'auth/invalid-email': N('電子郵件格式不對。'),
+    'auth/missing-email': N('請輸入電子郵件。'),
+    'auth/missing-password': N('請輸入密碼。'),
+    'auth/weak-password': N('密碼太短，至少要 6 個字元。'),
+    'auth/email-already-in-use': N('這個電子郵件已經註冊過了，請直接登入。'),
+    'auth/invalid-credential': N('電子郵件或密碼不對。'),
+    'auth/invalid-login-credentials': N('電子郵件或密碼不對。'),
+    'auth/wrong-password': N('密碼不對。'),
+    'auth/user-not-found': N('找不到這個帳號。'),
+    'auth/user-disabled': N('這個帳號已經停用。'),
+    'auth/too-many-requests': N('嘗試太多次了，請過幾分鐘再試。'),
+    'auth/network-request-failed': N('連不上網路，請確認連線後再試一次。'),
+    'auth/internal-error': N('登入時發生問題。請確認網路連線，或暫時關掉擋廣告的擴充功能後再試一次。'),
+    'auth/popup-blocked': N('瀏覽器擋住了登入視窗，請允許這個網站開啟彈出式視窗後再試一次。'),
+    'auth/operation-not-allowed': N('這個登入方式還沒開啟，網站管理者需要到 Firebase 主控台啟用。'),
+    'auth/unauthorized-domain': N('這個網址還不能登入，網站管理者需要把網域加進 Firebase 的授權網域。'),
+    'auth/account-exists-with-different-credential': N('這個電子郵件已經用其他方式註冊，請改用原本的方式登入。'),
+    'auth/requires-recent-login': N('為了安全，請重新登入後再試一次。'),
+    'auth/user-mismatch': N('請用目前這個帳號重新登入。'),
+    'permission-denied': N('沒有權限讀寫雲端資料，網站管理者需要部署 Firestore 規則。'),
+    'failed-precondition': N('雲端資料庫還沒建立好，網站管理者需要建立 Firestore 資料庫。'),
+    'resource-exhausted': N('今天的雲端用量已達上限，明天會自動恢復。'),
+    'too-big': N('資料太多，雲端存不下；可以刪掉一些自訂關卡後再試。'),
   };
   const SILENT = new Set(['auth/popup-closed-by-user', 'auth/cancelled-popup-request', 'auth/user-cancelled', 'cancelled']);
   function errorText(e) {
     const code = (e && e.code) || '';
-    return ERRORS[code] || ERRORS[code.replace(/^firestore\//, '')] || '發生錯誤，請稍後再試。' + (code ? '（' + code + '）' : '');
+    const known = ERRORS[code] || ERRORS[code.replace(/^firestore\//, '')];
+    return known ? t(known) : t('發生錯誤，請稍後再試。{text}', { text: code ? t('（{code}）', { code }) : '' });
   }
   const isOffline = (e) => (root.navigator && root.navigator.onLine === false) ||
     /unavailable|network|offline|deadline-exceeded/i.test(((e && e.code) || '') + ' ' + ((e && e.message) || ''));
@@ -230,7 +234,7 @@
       delete options.emulators;
       const app = appMod.initializeApp(options);
       const auth = A.getAuth(app);
-      auth.languageCode = 'zh-TW';
+      auth.languageCode = { 'zh-Hant': 'zh-TW', 'zh-Hans': 'zh-CN', en: 'en' }[HRD.i18n.locale()] || 'zh-TW';
       const db = F.getFirestore(app);
       if (emu && emu.auth) A.connectAuthEmulator(auth, emu.auth, { disableWarnings: true });
       if (emu && emu.firestore) F.connectFirestoreEmulator(db, emu.firestore[0], emu.firestore[1]);
@@ -285,7 +289,7 @@
           self.paused = true;
           setTimeout(() => {
             // 帳號失效時，Firebase 自己就會先登出，所以訊息要先準備好
-            signOutNote = '這個帳號已經刪除或停用，已自動登出';
+            signOutNote = t('這個帳號已經刪除或停用，已自動登出');
             A.reload(u).then(() => { signOutNote = ''; self.paused = false; onData(null); }, (e) => {
               if (/user-not-found|user-token-expired|user-disabled/.test(e.code || '')) { if (auth.currentUser) A.signOut(auth); return; }
               signOutNote = '';
@@ -302,7 +306,7 @@
 
   function accountOf(u) {
     const method = u.providerData.some((p) => p.providerId === 'google.com') ? 'google' : 'password';
-    return { uid: u.uid, name: u.displayName || (u.email || '').split('@')[0] || '玩家', email: u.email || '', photo: u.photoURL || '', method: method };
+    return { uid: u.uid, name: u.displayName || (u.email || '').split('@')[0] || t('玩家'), email: u.email || '', photo: u.photoURL || '', method: method };
   }
 
   async function onUser(u) {
@@ -312,7 +316,7 @@
       detach();
       store.useAccount(null);
       store.forgetAccount(prev.uid);
-      if (!quiet) toast(signOutNote || '已登出帳號，現在資料只存在這個瀏覽器');
+      if (!quiet) toast(signOutNote || t('已登出帳號，現在資料只存在這個瀏覽器'));
       signOutNote = '';
       return;
     }
@@ -325,24 +329,24 @@
     const first = await attach(firestoreRemote(acc.uid));
     if (!fresh) return;
     if (guest && (guest.levels || guest.records)) await offerGuest(guest, first);
-    else toast('已登入：' + acc.name);
+    else toast(t('已登入：{name}', { name: acc.name }));
   }
 
   async function offerGuest(g, remoteData) {
-    const what = [g.levels ? g.levels + ' 個自訂關卡' : '', g.records ? g.records + ' 筆過關紀錄' : ''].filter(Boolean).join('、');
+    const what = [g.levels ? t('{levels} 個自訂關卡', { levels: g.levels }) : '', g.records ? t('{records} 筆過關紀錄', { records: g.records }) : ''].filter(Boolean).join(t('、'));
     const hasData = remoteData && ((remoteData.custom || []).length || Object.keys(remoteData.progress || {}).length);
     if (!hasData) {
       store.adoptGuest();
-      toast('已登入，並把這台裝置的 ' + what + ' 存進帳號');
+      toast(t('已登入，並把這台裝置的 {what} 存進帳號', { what }));
       return;
     }
     const ok = await dialog({
-      title: '要把這台裝置的資料加進帳號嗎？',
-      message: '登入前，你在這台裝置留下了 ' + what + '。加進帳號後，在其他裝置登入也看得到；同一關的紀錄會保留比較好的成績。',
-      actions: [{ label: '先不要', value: false }, { label: '加進帳號', value: true, primary: true }],
+      title: t('要把這台裝置的資料加進帳號嗎？'),
+      message: t('登入前，你在這台裝置留下了 {what}。加進帳號後，在其他裝置登入也看得到；同一關的紀錄會保留比較好的成績。', { what }),
+      actions: [{ label: t('先不要'), value: false }, { label: t('加進帳號'), value: true, primary: true }],
     });
-    if (ok && store.account()) { store.adoptGuest(); toast('已把 ' + what + ' 加進帳號'); }
-    else toast('已登入。這台裝置原本的資料會留著，登出後就會看到');
+    if (ok && store.account()) { store.adoptGuest(); toast(t('已把 {what} 加進帳號', { what })); }
+    else toast(t('已登入。這台裝置原本的資料會留著，登出後就會看到'));
   }
 
   /* ---------- 登入、登出、刪除帳號 ---------- */
@@ -366,12 +370,12 @@
     const ready = loadFirebase();
     const msg = h('p', { class: 'auth-msg', role: 'status', 'aria-live': 'polite' });
     const say = (text, bad) => { msg.textContent = text || ''; msg.classList.toggle('is-error', !!bad); };
-    const googleBtn = h('button', { type: 'button', class: 'btn btn-secondary btn-google', disabled: true }, googleLogo(), h('span', {}, '用 Google 帳號登入'));
+    const googleBtn = h('button', { type: 'button', class: 'btn btn-secondary btn-google', disabled: true }, googleLogo(), h('span', {}, t('用 Google 帳號登入')));
     const email = h('input', { type: 'email', id: 'auth-email', class: 'input', autocomplete: 'username', inputmode: 'email', spellcheck: 'false' });
     const pw = h('input', { type: 'password', id: 'auth-password', class: 'input', autocomplete: 'current-password', 'aria-describedby': 'auth-password-note' });
-    const signInBtn = h('button', { type: 'submit', class: 'btn btn-primary', disabled: true }, '登入');
-    const signUpBtn = h('button', { type: 'button', class: 'btn btn-secondary', disabled: true }, '建立新帳號');
-    const forgotBtn = h('button', { type: 'button', class: 'text-btn', disabled: true }, '忘記密碼？');
+    const signInBtn = h('button', { type: 'submit', class: 'btn btn-primary', disabled: true }, t('登入'));
+    const signUpBtn = h('button', { type: 'button', class: 'btn btn-secondary', disabled: true }, t('建立新帳號'));
+    const forgotBtn = h('button', { type: 'button', class: 'text-btn', disabled: true }, t('忘記密碼？'));
     const buttons = [googleBtn, signInBtn, signUpBtn, forgotBtn];
     let busy = true;
     const setBusy = (b) => { busy = b; buttons.forEach((x) => { x.disabled = b; }); };
@@ -406,9 +410,9 @@
       run(() => p);
     });
     const form = h('form', { class: 'auth-form', novalidate: true },
-      h('div', { class: 'field' }, h('label', { class: 'field-label', for: 'auth-email' }, '電子郵件'), email),
-      h('div', { class: 'field' }, h('label', { class: 'field-label', for: 'auth-password' }, '密碼'), pw,
-        h('p', { class: 'field-note', id: 'auth-password-note' }, '建立新帳號時，密碼至少要 6 個字元。')),
+      h('div', { class: 'field' }, h('label', { class: 'field-label', for: 'auth-email' }, t('電子郵件')), email),
+      h('div', { class: 'field' }, h('label', { class: 'field-label', for: 'auth-password' }, t('密碼')), pw,
+        h('p', { class: 'field-note', id: 'auth-password-note' }, t('建立新帳號時，密碼至少要 6 個字元。'))),
       h('div', { class: 'btn-row' }, signInBtn, signUpBtn, forgotBtn));
     form.addEventListener('submit', (e) => {
       e.preventDefault();
@@ -426,20 +430,20 @@
         const a = email.value.trim();
         if (!a) throw { code: 'auth/missing-email' };
         return fb.A.sendPasswordResetEmail(fb.auth, a);
-      }, '如果這個電子郵件有註冊過，重設密碼的信已經寄出，請到信箱收信。');
+      }, t('如果這個電子郵件有註冊過，重設密碼的信已經寄出，請到信箱收信。'));
     });
 
-    ready.then(() => { setBusy(false); say(''); }, () => say('登入元件載入失敗，請確認網路連線後再開一次。', true));
-    say('載入中…');
+    ready.then(() => { setBusy(false); say(''); }, () => say(t('登入元件載入失敗，請確認網路連線後再開一次。'), true));
+    say(t('載入中…'));
 
     return dialog({
-      title: '登入華容道',
+      title: t('登入華容道'),
       body: (close) => {
         closeDialog = close;
         return h('div', { class: 'auth-box' },
-          h('p', { class: 'dialog-text' }, '登入後，自訂關卡、過關紀錄和設定會存進你的帳號，換手機或電腦登入同一個帳號就能接著玩。'),
+          h('p', { class: 'dialog-text' }, t('登入後，自訂關卡、過關紀錄和設定會存進你的帳號，換手機或電腦登入同一個帳號就能接著玩。')),
           googleBtn,
-          h('div', { class: 'auth-or', role: 'presentation' }, h('span', {}, '或用電子郵件')),
+          h('div', { class: 'auth-or', role: 'presentation' }, h('span', {}, t('或用電子郵件'))),
           form, msg);
       },
       actions: [],
@@ -459,18 +463,18 @@
     const acc = store.account();
     if (!acc) return;
     if (!fb) {
-      try { await loadFirebase(); } catch (e) { toast('目前連不上網路，連線後再登出'); return; }
+      try { await loadFirebase(); } catch (e) { toast(t('目前連不上網路，連線後再登出')); return; }
     }
     const synced = await settle(5000);
-    const ok = await confirmDialog('要登出嗎？', synced
-      ? '登出後，這台裝置會回到未登入的狀態。帳號裡的關卡和紀錄都會保留，下次登入就會回來。'
-      : '還有變更沒有存進雲端（' + statusText() + '）。現在登出，這些變更會遺失。', '登出', !synced);
+    const ok = await confirmDialog(t('要登出嗎？'), synced
+      ? t('登出後，這台裝置會回到未登入的狀態。帳號裡的關卡和紀錄都會保留，下次登入就會回來。')
+      : t('還有變更沒有存進雲端（{statusText}）。現在登出，這些變更會遺失。', { statusText: statusText() }), t('登出'), !synced);
     if (!ok) return;
     quiet = true;
     try {
       await fb.A.signOut(fb.auth);
       await onUser(null);
-      toast('已登出');
+      toast(t('已登出'));
     } finally {
       quiet = false;
     }
@@ -480,8 +484,8 @@
     const input = h('input', { type: 'password', id: 'reauth-password', class: 'input', autocomplete: 'current-password', autofocus: true });
     return dialog({
       title: title,
-      body: h('div', { class: 'field' }, h('label', { class: 'field-label', for: 'reauth-password' }, '密碼'), input),
-      actions: [{ label: '取消', value: null }, { label: '確認', primary: true, onClick: (close) => { close(input.value); return false; } }],
+      body: h('div', { class: 'field' }, h('label', { class: 'field-label', for: 'reauth-password' }, t('密碼')), input),
+      actions: [{ label: t('取消'), value: null }, { label: t('確認'), primary: true, onClick: (close) => { close(input.value); return false; } }],
     });
   }
 
@@ -494,7 +498,7 @@
       await A.reauthenticateWithPopup(u, new A.GoogleAuthProvider());
       return;
     }
-    const pw = await askPassword('請輸入密碼確認是你本人');
+    const pw = await askPassword(t('請輸入密碼確認是你本人'));
     if (!pw) throw { code: 'cancelled' };
     await A.reauthenticateWithCredential(u, A.EmailAuthProvider.credential(u.email, pw));
   }
@@ -503,9 +507,9 @@
     const acc = store.account();
     if (!acc || !fb || !fb.auth.currentUser) return;
     const ok = await dialog({
-      title: '永久刪除帳號？',
-      message: '帳號，以及存在雲端的自訂關卡、過關紀錄和設定都會永久刪除，沒辦法復原。想留一份的話，請先用下方的「備份全部資料」。',
-      actions: [{ label: '取消', value: false }, { label: '永久刪除帳號', value: true, danger: true }],
+      title: t('永久刪除帳號？'),
+      message: t('帳號，以及存在雲端的自訂關卡、過關紀錄和設定都會永久刪除，沒辦法復原。想留一份的話，請先用下方的「備份全部資料」。'),
+      actions: [{ label: t('取消'), value: false }, { label: t('永久刪除帳號'), value: true, danger: true }],
     });
     if (!ok) return;
     const u = fb.auth.currentUser;
@@ -517,9 +521,9 @@
       await r.remove();
       await fb.A.deleteUser(u);
       await onUser(null);
-      toast('帳號已刪除');
+      toast(t('帳號已刪除'));
     } catch (e) {
-      if (!SILENT.has(e && e.code)) toast('刪除沒有完成：' + errorText(e));
+      if (!SILENT.has(e && e.code)) toast(t('刪除沒有完成：{errorText}', { errorText: errorText(e) }));
       if (fb.auth.currentUser && store.account() && !remote) attach(firestoreRemote(fb.auth.currentUser.uid));
     } finally {
       quiet = false;
@@ -529,8 +533,8 @@
   /* ---------- 給畫面用 ---------- */
   function ago(ts) {
     const s = Math.round((Date.now() - ts) / 1000);
-    if (s < 45) return '剛剛';
-    if (s < 3600) return Math.round(s / 60) + ' 分鐘前';
+    if (s < 45) return t('剛剛');
+    if (s < 3600) return t('{n} 分鐘前', { n: Math.round(s / 60) });
     return HRD.ui.formatDate(ts);
   }
 
@@ -543,11 +547,11 @@
 
   function statusText() {
     const s = currentStatus();
-    if (s.state === 'syncing') return '同步中…';
-    if (s.state === 'synced') return '已同步' + (s.at ? ' · ' + ago(s.at) : '');
-    if (s.state === 'offline') return '目前離線，連上網路後會自動同步';
-    if (s.state === 'error') return '同步失敗：' + s.message;
-    return store.account() ? '準備同步…' : '';
+    if (s.state === 'syncing') return t('同步中…');
+    if (s.state === 'synced') return t('已同步{text}', { text: s.at ? ' · ' + ago(s.at) : '' });
+    if (s.state === 'offline') return t('目前離線，連上網路後會自動同步');
+    if (s.state === 'error') return t('同步失敗：{message}', { message: s.message });
+    return store.account() ? t('準備同步…') : '';
   }
 
   /* 頭像：有照片用照片，沒有就用名字的第一個字 */
@@ -608,7 +612,7 @@
     signInDialog,
     signOut,
     deleteAccount,
-    syncNow() { if (remote) push(); else if (provider === 'firebase' && store.account()) loadFirebase().catch(() => toast('目前連不上網路')); },
+    syncNow() { if (remote) push(); else if (provider === 'firebase' && store.account()) loadFirebase().catch(() => toast(t('目前連不上網路'))); },
     avatar,
   };
 })(window);

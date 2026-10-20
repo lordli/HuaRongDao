@@ -14,6 +14,9 @@
  */
 (function (root) {
   'use strict';
+  // 測試在 Node 裡跑時，自己載入翻譯模組（預設繁體中文，也就是原文）
+  const I18N = root.HRD && root.HRD.i18n ? root.HRD.i18n : require('./i18n.js');
+  const t = (s, p) => I18N.t(s, p);
   const E = root.HRD && root.HRD.engine ? root.HRD.engine : require('./engine.js');
 
   const PREFIX = 'HRD';
@@ -52,7 +55,7 @@
   function encode(level) {
     const st = E.levelToState(level);
     const v = E.validate(st);
-    if (!v.ok) throw new Error('盤面還不完整：' + v.errors[0]);
+    if (!v.ok) throw new Error(t('盤面還不完整：{errors}', { errors: t(v.errors[0]) }));
     const pieces = st.pieces.slice().sort((a, b) => a.y - b.y || a.x - b.x);
     const sorted = E.makeState(st.cols, st.rows, st.exit, pieces);
     const grid = new Array(st.cols * st.rows).fill('.');
@@ -60,7 +63,7 @@
       for (let dy = 0; dy < p.h; dy++) for (let dx = 0; dx < p.w; dx++) grid[(p.y + dy) * st.cols + p.x + dx] = LETTERS[k];
     });
     const defaults = E.defaultLabels(sorted);
-    const meta = { n: (level.name || '').trim() || '未命名關卡' };
+    const meta = { n: (level.name || '').trim() || t('未命名關卡') };
     if (level.difficultySet && level.difficulty) meta.d = level.difficulty;
     const labels = {};
     pieces.forEach((p, k) => { if (p.label !== defaults[k]) labels[LETTERS[k]] = p.label; });
@@ -118,22 +121,22 @@
   function decode(text) {
     const p = matches(text)[0];
     if (!p) {
-      if (/HRD[12]/.test(String(text || ''))) throw new Error('分享碼不完整，請重新複製一次。');
-      throw new Error('找不到分享碼。分享碼是以「HRD1-」或「HRD2-」開頭的一串文字。');
+      if (/HRD[12]/.test(String(text || ''))) throw new Error(t('分享碼不完整，請重新複製一次。'));
+      throw new Error(t('找不到分享碼。分享碼是以「HRD1-」或「HRD2-」開頭的一串文字。'));
     }
-    if (checksum(p.body) !== p.check) throw new Error('分享碼有地方抄錯或缺了一段，請重新複製一次。');
-    if (p.grid.length !== p.cols * p.rows) throw new Error('分享碼裡的盤面格數不對，請重新複製一次。');
-    if (!E.validExit(p.cols, p.rows, p.exit)) throw new Error('分享碼裡的出口位置不正確。');
+    if (checksum(p.body) !== p.check) throw new Error(t('分享碼有地方抄錯或缺了一段，請重新複製一次。'));
+    if (p.grid.length !== p.cols * p.rows) throw new Error(t('分享碼裡的盤面格數不對，請重新複製一次。'));
+    if (!E.validExit(p.cols, p.rows, p.exit)) throw new Error(t('分享碼裡的出口位置不正確。'));
 
     let meta;
-    try { meta = JSON.parse(fromBase64Url(p.data)); } catch (e) { throw new Error('分享碼裡的關卡資料讀不出來。'); }
+    try { meta = JSON.parse(fromBase64Url(p.data)); } catch (e) { throw new Error(t('分享碼裡的關卡資料讀不出來。')); }
     if (!meta || typeof meta !== 'object') meta = {};
 
     const rows = [];
     for (let y = 0; y < p.rows; y++) rows.push(p.grid.slice(y * p.cols, (y + 1) * p.cols));
     let st;
     try { st = E.fromGrid(rows, null, p.exit); }
-    catch (e) { throw new Error('分享碼裡的盤面有問題：' + e.message); }
+    catch (e) { throw new Error(t('分享碼裡的盤面有問題：{message}', { message: e.message })); }
     const order = [];
     p.grid.split('').forEach((ch) => { if (ch !== '.' && !order.includes(ch)) order.push(ch); });
     const defaults = E.defaultLabels(st);
@@ -189,14 +192,14 @@
 
   /* 貼到聊天軟體的成績訊息。r: {name, steps, timeMs, minMoves, stars, hints, code, link} */
   function scoreText(r) {
-    const parts = [r.steps + ' 步'];
-    if (r.minMoves != null) parts[0] += '（最少 ' + r.minMoves + ' 步）';
+    const parts = [t('{steps} 步', { steps: r.steps })];
+    if (r.minMoves != null) parts[0] += t('（最少 {minMoves} 步）', { minMoves: r.minMoves });
     if (r.stars) parts.push(starText(r.stars));
-    parts.push('用時 ' + clock(r.timeMs));
-    if (r.hints) parts.push('用了 ' + r.hints + ' 次提示');
-    const lines = ['我在華容道「' + r.name + '」過關了！', parts.join(' · ')];
-    if (r.link) lines.push('換你挑戰：' + r.link);
-    else if (r.code) lines.push('換你挑戰：到華容道的「我的關卡 → 匯入關卡」貼上分享碼 ' + r.code);
+    parts.push(t('用時 {clock}', { clock: clock(r.timeMs) }));
+    if (r.hints) parts.push(t('用了 {hints} 次提示', { hints: r.hints }));
+    const lines = [t('我在華容道「{name}」過關了！', { name: r.name }), parts.join(' · ')];
+    if (r.link) lines.push(t('換你挑戰：{link}', { link: r.link }));
+    else if (r.code) lines.push(t('換你挑戰：到華容道的「我的關卡 → 匯入關卡」貼上分享碼 {code}', { code: r.code }));
     return lines.join('\n');
   }
 

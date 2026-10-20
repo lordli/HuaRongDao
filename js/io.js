@@ -1,6 +1,7 @@
 /* 匯出、匯入關卡，以及在背景驗證自訂關卡能不能解。 */
 (function (root) {
   'use strict';
+  const t = (s, p) => root.HRD.i18n.t(s, p);
   const HRD = root.HRD;
   const E = HRD.engine;
   const { h, icon, toast, dialog, copyText, saveFile } = HRD.ui;
@@ -33,10 +34,10 @@
 
   function exportDialog(levels, title) {
     return jsonDialog({
-      title: title || '匯出關卡',
-      summary: '共 ' + levels.length + ' 個關卡。下載成 JSON 檔，或複製內容貼到別的地方保存。',
+      title: title || t('匯出關卡'),
+      summary: t('共 {n} 個關卡。下載成 JSON 檔，或複製內容貼到別的地方保存。', { n: levels.length }),
       json: toJSON(levels),
-      filename: levels.length === 1 ? '華容道-' + safeName(levels[0].name) + '.json' : 'huarongdao-levels-' + today() + '.json',
+      filename: levels.length === 1 ? t('華容道-{safeName}.json', { safeName: safeName(levels[0].name) }) : 'huarongdao-levels-' + today() + '.json',
     });
   }
 
@@ -46,8 +47,8 @@
     const json = JSON.stringify({ app: 'huarongdao', kind: 'backup', version: 1, exportedAt: new Date().toISOString(), data: data }, null, 2);
     const records = Object.keys(data.progress).length;
     return jsonDialog({
-      title: '備份全部資料',
-      summary: '包含 ' + data.custom.length + ' 個自訂關卡、' + records + ' 筆過關紀錄和你的設定。換電腦或清除瀏覽資料前，先下載這個檔案。',
+      title: t('備份全部資料'),
+      summary: t('包含 {n} 個自訂關卡、{records} 筆過關紀錄和你的設定。換電腦或清除瀏覽資料前，先下載這個檔案。', { n: data.custom.length, records }),
       json: json,
       filename: 'huarongdao-backup-' + today() + '.json',
     });
@@ -64,16 +65,16 @@
       if (okBtn) okBtn.disabled = true;
       if (!text.trim()) return;
       let obj;
-      try { obj = JSON.parse(text); } catch (e) { msg.appendChild(h('p', { class: 'msg msg-bad' }, icon('bad', 18), '不是有效的 JSON，請確認內容完整。')); return; }
+      try { obj = JSON.parse(text); } catch (e) { msg.appendChild(h('p', { class: 'msg msg-bad' }, icon('bad', 18), t('不是有效的 JSON，請確認內容完整。'))); return; }
       if (!obj || obj.app !== 'huarongdao' || obj.kind !== 'backup' || !obj.data) {
         const levelsFile = obj && (Array.isArray(obj) || Array.isArray(obj.levels) || Array.isArray(obj.pieces));
-        msg.appendChild(h('p', { class: 'msg msg-bad' }, icon('bad', 18), levelsFile ? '這是關卡檔，請到「我的關卡 → 匯入關卡」加入。' : '這不是華容道的備份檔。'));
+        msg.appendChild(h('p', { class: 'msg msg-bad' }, icon('bad', 18), levelsFile ? t('這是關卡檔，請到「我的關卡 → 匯入關卡」加入。') : t('這不是華容道的備份檔。')));
         return;
       }
       parsed = obj.data;
       const n = Array.isArray(parsed.custom) ? parsed.custom.length : 0;
       const r = parsed.progress && typeof parsed.progress === 'object' ? Object.keys(parsed.progress).length : 0;
-      msg.appendChild(h('p', { class: 'msg msg-ok' }, icon('ok', 18), '備份檔時間 ' + (obj.exportedAt ? new Date(obj.exportedAt).toLocaleString('zh-TW') : '不明') + '：' + n + ' 個自訂關卡、' + r + ' 筆過關紀錄。'));
+      msg.appendChild(h('p', { class: 'msg msg-ok' }, icon('ok', 18), t('備份檔時間 {text}：{n} 個自訂關卡、{r} 筆過關紀錄。', { text: obj.exportedAt ? new Date(obj.exportedAt).toLocaleString(HRD.i18n.dateLocale()) : t('不明'), n, r })));
       if (okBtn) okBtn.disabled = false;
     }
     file.addEventListener('change', () => {
@@ -86,25 +87,25 @@
     let timer;
     area.addEventListener('input', () => { clearTimeout(timer); timer = setTimeout(() => show(area.value), 250); });
     return dialog({
-      title: '還原備份',
+      title: t('還原備份'),
       wide: true,
       body: h('div', { class: 'stack' },
-        h('label', { class: 'field-label', for: 'restore-file' }, '選擇備份檔'),
+        h('label', { class: 'field-label', for: 'restore-file' }, t('選擇備份檔')),
         file,
-        h('label', { class: 'field-label', for: 'restore-text' }, '或貼上備份內容'),
+        h('label', { class: 'field-label', for: 'restore-text' }, t('或貼上備份內容')),
         area,
         msg,
-        h('p', { class: 'hint-text' }, '還原會和現有資料合併：關卡取較新的版本，紀錄取較好的成績，不會刪掉你現在的資料。')),
+        h('p', { class: 'hint-text' }, t('還原會和現有資料合併：關卡取較新的版本，紀錄取較好的成績，不會刪掉你現在的資料。'))),
       onReady: (d) => { okBtn = d.querySelector('[data-action="restore"]'); okBtn.disabled = true; },
       actions: [
-        { label: '取消', value: null },
-        { id: 'restore', label: '還原', primary: true, value: 'restore' },
+        { label: t('取消'), value: null },
+        { id: 'restore', label: t('還原'), primary: true, value: 'restore' },
       ],
     }).then((v) => {
       if (v !== 'restore' || !parsed) return null;
       const r = HRD.store.restore(parsed);
       HRD.settings.apply();
-      toast('已還原：新增 ' + r.levels + ' 個關卡、' + r.records + ' 筆紀錄');
+      toast(t('已還原：新增 {levels} 個關卡、{records} 筆紀錄', { levels: r.levels, records: r.records }));
       verifyPending();
       return r;
     });
@@ -119,19 +120,19 @@
       wide: true,
       body: h('div', { class: 'stack' },
         h('p', { class: 'dialog-text' }, o.summary),
-        h('label', { class: 'field-label', for: 'export-json' }, 'JSON 內容'),
+        h('label', { class: 'field-label', for: 'export-json' }, t('JSON 內容')),
         area),
       actions: [
-        { label: '複製 JSON', onClick: () => { copyText(json, area); return false; } },
-        { label: '下載檔案', primary: true, onClick: () => {
+        { label: t('複製 JSON'), onClick: () => { copyText(json, area); return false; } },
+        { label: t('下載檔案'), primary: true, onClick: () => {
           saveFile(filename, json).then((r) => {
-            if (r === 'saved') toast('已下載 ' + filename);
-            else if (r === 'declined') toast('已取消下載');
-            else toast('這裡沒辦法直接下載，請改用「複製 JSON」');
+            if (r === 'saved') toast(t('已下載 {filename}', { filename }));
+            else if (r === 'declined') toast(t('已取消下載'));
+            else toast(t('這裡沒辦法直接下載，請改用「複製 JSON」'));
           });
           return false;
         } },
-        { label: '完成', value: true },
+        { label: t('完成'), value: true },
       ],
     });
   }
@@ -140,11 +141,11 @@
   function parseImport(text) {
     const codes = HRD.share.find(text);
     if (codes.length) {
-      if (codes.length > 200) return { error: '一次最多匯入 200 個關卡。' };
+      if (codes.length > 200) return { error: t('一次最多匯入 200 個關卡。') };
       return {
         items: codes.map((code, n) => {
           try { return { ok: true, level: HRD.share.decode(code) }; }
-          catch (e) { return { ok: false, name: '第 ' + (n + 1) + ' 個分享碼', error: e.message }; }
+          catch (e) { return { ok: false, name: t('第 {n} 個分享碼', { n: n + 1 }), error: e.message }; }
         }),
       };
     }
@@ -153,14 +154,14 @@
       try { HRD.share.decode(trimmed); } catch (e) { return { error: e.message }; }
     }
     let data;
-    try { data = JSON.parse(text); } catch (e) { return { error: '不是有效的 JSON，請確認內容完整。' }; }
+    try { data = JSON.parse(text); } catch (e) { return { error: t('不是有效的 JSON，請確認內容完整。') }; }
     const list = Array.isArray(data) ? data : data && Array.isArray(data.levels) ? data.levels : [data];
-    if (!list.length) return { error: '檔案裡沒有關卡。' };
-    if (list.length > 200) return { error: '一次最多匯入 200 個關卡。' };
+    if (!list.length) return { error: t('檔案裡沒有關卡。') };
+    if (list.length > 200) return { error: t('一次最多匯入 200 個關卡。') };
     return {
       items: list.map((raw, n) => {
         try { return { ok: true, level: E.normalizeLevel(raw) }; }
-        catch (e) { return { ok: false, name: raw && raw.name ? String(raw.name).slice(0, 30) : '第 ' + (n + 1) + ' 筆', error: e.message }; }
+        catch (e) { return { ok: false, name: raw && raw.name ? String(raw.name).slice(0, 30) : t('第 {n} 筆', { n: n + 1 }), error: e.message }; }
       }),
     };
   }
@@ -170,7 +171,7 @@
     let addBtn = null;
     const preview = h('div', { class: 'import-preview', 'aria-live': 'polite' });
     const file = h('input', { type: 'file', id: 'import-file', accept: '.json,application/json' });
-    const area = h('textarea', { id: 'import-text', class: 'code-area', rows: 5, spellcheck: 'false', placeholder: 'HRD1-… 或 { "app": "huarongdao", "levels": [ … ] }' });
+    const area = h('textarea', { id: 'import-text', class: 'code-area', rows: 5, spellcheck: 'false', placeholder: t('HRD1-… 或 { "app": "huarongdao", "levels": [ … ] }') });
 
     function show(text) {
       preview.textContent = '';
@@ -178,17 +179,17 @@
       const okItems = parsed && parsed.items ? parsed.items.filter((i) => i.ok) : [];
       if (addBtn) {
         addBtn.disabled = okItems.length === 0;
-        addBtn.textContent = okItems.length ? '加入 ' + okItems.length + ' 個關卡' : '加入我的關卡';
+        addBtn.textContent = okItems.length ? t('加入 {n} 個關卡', { n: okItems.length }) : t('加入我的關卡');
       }
       if (!parsed) return;
       if (parsed.error) { preview.appendChild(h('p', { class: 'msg msg-bad' }, icon('bad', 18), parsed.error)); return; }
       const ul = h('ul', { class: 'import-list' });
       parsed.items.forEach((it) => {
         ul.appendChild(it.ok
-          ? h('li', { class: 'msg msg-ok' }, icon('ok', 18), h('span', {}, it.level.name, h('span', { class: 'muted' }, ' · ' + it.level.pieces.length + ' 顆棋子')))
-          : h('li', { class: 'msg msg-bad' }, icon('bad', 18), h('span', {}, it.name + '：' + it.error)));
+          ? h('li', { class: 'msg msg-ok' }, icon('ok', 18), h('span', {}, it.level.name, h('span', { class: 'muted' }, t(' · {n} 顆棋子', { n: it.level.pieces.length }))))
+          : h('li', { class: 'msg msg-bad' }, icon('bad', 18), h('span', {}, t('{name}：{error}', { name: it.name, error: it.error }))));
       });
-      preview.append(h('p', { class: 'dialog-text' }, '找到 ' + parsed.items.length + ' 筆，可以加入 ' + okItems.length + ' 筆：'), ul);
+      preview.append(h('p', { class: 'dialog-text' }, t('找到 {n} 筆，可以加入 {n2} 筆：', { n: parsed.items.length, n2: okItems.length })), ul);
     }
 
     file.addEventListener('change', () => {
@@ -196,22 +197,22 @@
       if (!f) return;
       const reader = new FileReader();
       reader.onload = () => { area.value = String(reader.result || ''); show(area.value); };
-      reader.onerror = () => toast('讀不到這個檔案');
+      reader.onerror = () => toast(t('讀不到這個檔案'));
       reader.readAsText(f);
     });
     let timer;
     area.addEventListener('input', () => { clearTimeout(timer); timer = setTimeout(() => show(area.value), 250); });
 
     return dialog({
-      title: '匯入關卡',
+      title: t('匯入關卡'),
       wide: true,
       body: h('div', { class: 'stack' },
-        h('label', { class: 'field-label', for: 'import-text' }, '貼上分享碼、分享連結或 JSON'),
+        h('label', { class: 'field-label', for: 'import-text' }, t('貼上分享碼、分享連結或 JSON')),
         area,
-        h('label', { class: 'field-label', for: 'import-file' }, '或選擇 JSON 檔案'),
+        h('label', { class: 'field-label', for: 'import-file' }, t('或選擇 JSON 檔案')),
         file,
         preview,
-        h('p', { class: 'hint-text' }, '同名的關卡會自動改名，不會覆蓋你原本的關卡。')),
+        h('p', { class: 'hint-text' }, t('同名的關卡會自動改名，不會覆蓋你原本的關卡。'))),
       onReady: (d) => {
         addBtn = d.querySelector('[data-action="add"]');
         addBtn.disabled = true;
@@ -219,8 +220,8 @@
         setTimeout(() => area.focus(), 0);
       },
       actions: [
-        { label: '取消', value: null },
-        { id: 'add', label: '加入我的關卡', primary: true, onClick: () => {
+        { label: t('取消'), value: null },
+        { id: 'add', label: t('加入我的關卡'), primary: true, onClick: () => {
           if (!parsed || !parsed.items) return false;
           return undefined;
         }, value: 'add' },
@@ -231,7 +232,7 @@
         shape: E.shapeKey(E.levelToState(i.level)), solvable: null, minMoves: null, solveStatus: null,
       }));
       const added = HRD.store.importLevels(levels);
-      toast('已加入 ' + added.length + ' 個關卡');
+      toast(t('已加入 {n} 個關卡', { n: added.length }));
       verifyPending();
       return added;
     });
@@ -244,7 +245,7 @@
     return h('div', { class: 'field' },
       h('label', { class: 'field-label', for: id }, label),
       h('div', { class: 'copy-row' }, input,
-        h('button', { type: 'button', class: 'btn btn-indigo btn-sm', onclick: () => copyText(value, input) }, icon('copy', 16), '複製')));
+        h('button', { type: 'button', class: 'btn btn-indigo btn-sm', onclick: () => copyText(value, input) }, icon('copy', 16), t('複製'))));
   }
 
   /* level 需有 pieces 與 name；minMoves 有的話會顯示 */
@@ -256,19 +257,19 @@
     // 發佈到關卡廣場的關卡，連結直接開廣場上的那一頁
     const link = plain && level.publicId ? plain.replace(/#\/s\/.*$/, '#/g/' + level.publicId) : plain;
     const st = E.levelToState(level);
-    const facts = [st.pieces.length + ' 顆棋子'];
-    if (level.minMoves != null) facts.push('最少 ' + level.minMoves + ' 步');
-    const message = '來挑戰我的華容道關卡「' + level.name + '」！' + (link ? '\n' + link : '\n分享碼：' + code);
+    const facts = [t('{n} 顆棋子', { n: st.pieces.length })];
+    if (level.minMoves != null) facts.push(t('最少 {minMoves} 步', { minMoves: level.minMoves }));
+    const message = t('來挑戰我的華容道關卡「{name}」！{text}', { name: level.name, text: link ? '\n' + link : t('\n分享碼：{code}', { code }) });
     const actions = [];
     if (link && navigator.share && !root.claude) {
-      actions.push({ label: '傳送給朋友…', onClick: () => {
-        navigator.share({ title: '華容道：' + level.name, text: '來挑戰我的華容道關卡「' + level.name + '」！', url: link }).catch(() => {});
+      actions.push({ label: t('傳送給朋友…'), onClick: () => {
+        navigator.share({ title: t('華容道：{name}', { name: level.name }), text: t('來挑戰我的華容道關卡「{name}」！', { name: level.name }), url: link }).catch(() => {});
         return false;
       } });
     }
-    actions.push({ label: '完成', primary: true, value: true });
+    actions.push({ label: t('完成'), primary: true, value: true });
     return dialog({
-      title: '分享關卡',
+      title: t('分享關卡'),
       wide: true,
       body: h('div', { class: 'stack' },
         h('div', { class: 'share-head' },
@@ -276,15 +277,15 @@
           h('div', {},
             h('p', { class: 'share-name' }, level.name),
             h('p', { class: 'muted' }, facts.join(' · ')))),
-        link ? copyRow('share-link', '分享連結', link) : null,
-        copyRow('share-code', '分享碼', code),
-        link ? h('p', { class: 'hint-text' }, '朋友打開連結就能直接挑戰。也可以只傳分享碼，對方在「我的關卡 → 匯入關卡」貼上即可。')
-          : h('p', { class: 'hint-text' }, '對方在「我的關卡 → 匯入關卡」貼上分享碼就能玩。網站部署到網路上之後，這裡還會出現可以直接點開的分享連結。'),
+        link ? copyRow('share-link', t('分享連結'), link) : null,
+        copyRow('share-code', t('分享碼'), code),
+        link ? h('p', { class: 'hint-text' }, t('朋友打開連結就能直接挑戰。也可以只傳分享碼，對方在「我的關卡 → 匯入關卡」貼上即可。'))
+          : h('p', { class: 'hint-text' }, t('對方在「我的關卡 → 匯入關卡」貼上分享碼就能玩。網站部署到網路上之後，這裡還會出現可以直接點開的分享連結。')),
         h('div', { class: 'field' },
-          h('span', { class: 'field-label', id: 'share-msg-label' }, '或直接複製這段訊息'),
+          h('span', { class: 'field-label', id: 'share-msg-label' }, t('或直接複製這段訊息')),
           h('div', { class: 'copy-row' },
             h('p', { class: 'share-msg', 'aria-labelledby': 'share-msg-label' }, message),
-            h('button', { type: 'button', class: 'btn btn-secondary btn-sm', onclick: () => copyText(message) }, icon('copy', 16), '複製訊息')))),
+            h('button', { type: 'button', class: 'btn btn-secondary btn-sm', onclick: () => copyText(message) }, icon('copy', 16), t('複製訊息'))))),
       actions: actions,
     });
   }
@@ -302,11 +303,11 @@
       name: r.level.name, steps: r.steps, timeMs: r.timeMs, minMoves: minMoves,
       stars: minMoves != null ? r.stars : 0, hints: r.hints || 0, code: code, link: link,
     });
-    const alt = '成績圖卡：' + r.level.name + '，' + r.steps + ' 步，用時 ' + HRD.ui.formatTime(r.timeMs) + (minMoves != null ? '，' + r.stars + ' 顆星' : '');
+    const alt = t('成績圖卡：{name}，{steps} 步，用時 {time}{text}', { name: r.level.name, steps: r.steps, time: HRD.ui.formatTime(r.timeMs), text: minMoves != null ? t('，{stars} 顆星', { stars: r.stars }) : '' });
     const img = h('img', { class: 'score-img', alt: alt, width: HRD.scoreCard.WIDTH, height: HRD.scoreCard.HEIGHT, hidden: true });
-    const wait = h('p', { class: 'score-wait' }, '正在產生成績圖卡…');
+    const wait = h('p', { class: 'score-wait' }, t('正在產生成績圖卡…'));
     let blob = null, url = null;
-    const filename = '華容道-' + String(r.level.name).replace(/[\\/:*?"<>|\s]+/g, '-') + '-' + r.steps + '步.png';
+    const filename = t('華容道-{replace}-{steps}步.png', { replace: String(r.level.name).replace(/[\\/:*?"<>|\s]+/g, '-'), steps: r.steps });
 
     HRD.scoreCard.render({
       level: r.level, steps: r.steps, timeMs: r.timeMs, minMoves: minMoves,
@@ -317,42 +318,42 @@
       img.src = url;
       img.hidden = false;
       wait.remove();
-    }).catch(() => { wait.textContent = '這個瀏覽器沒辦法產生圖卡，請改用下面的文字訊息。'; });
+    }).catch(() => { wait.textContent = t('這個瀏覽器沒辦法產生圖卡，請改用下面的文字訊息。'); });
 
     const actions = [];
     if (navigator.share && !root.claude) {
-      actions.push({ label: '傳送給朋友…', onClick: () => {
+      actions.push({ label: t('傳送給朋友…'), onClick: () => {
         const file = blob && typeof File === 'function' ? new File([blob], filename, { type: 'image/png' }) : null;
         const data = file && navigator.canShare && navigator.canShare({ files: [file] }) ? { files: [file], text: text } : { text: text };
         navigator.share(data).catch(() => {});
         return false;
       } });
     }
-    actions.push({ label: '下載圖卡', onClick: () => {
-      if (!blob) { toast('圖卡還在產生中，請稍等一下'); return false; }
+    actions.push({ label: t('下載圖卡'), onClick: () => {
+      if (!blob) { toast(t('圖卡還在產生中，請稍等一下')); return false; }
       saveFile(filename, blob).then((res) => {
-        if (res === 'saved') toast('已下載成績圖卡');
-        else if (res === 'declined') toast('已取消下載');
-        else toast('這裡沒辦法直接下載圖卡，可以在圖片上按右鍵或長按另存');
+        if (res === 'saved') toast(t('已下載成績圖卡'));
+        else if (res === 'declined') toast(t('已取消下載'));
+        else toast(t('這裡沒辦法直接下載圖卡，可以在圖片上按右鍵或長按另存'));
       });
       return false;
     } });
-    actions.push({ label: '完成', primary: true, value: true });
+    actions.push({ label: t('完成'), primary: true, value: true });
 
     return dialog({
-      title: '分享成績',
+      title: t('分享成績'),
       wide: true,
       body: h('div', { class: 'score-share' },
         h('figure', { class: 'score-preview' }, wait, img),
         h('div', { class: 'stack' },
           h('div', { class: 'field' },
-            h('span', { class: 'field-label', id: 'score-msg-label' }, '成績訊息'),
+            h('span', { class: 'field-label', id: 'score-msg-label' }, t('成績訊息')),
             h('p', { class: 'share-msg', 'aria-labelledby': 'score-msg-label' }, text),
-            h('button', { type: 'button', class: 'btn btn-indigo btn-sm', onclick: () => copyText(text) }, icon('copy', 16), '複製訊息')),
-          link ? copyRow('score-link', '挑戰連結', link) : null,
+            h('button', { type: 'button', class: 'btn btn-indigo btn-sm', onclick: () => copyText(text) }, icon('copy', 16), t('複製訊息'))),
+          link ? copyRow('score-link', t('挑戰連結'), link) : null,
           h('p', { class: 'hint-text' }, link
-            ? '朋友打開挑戰連結，會看到你的成績，過關後可以比比看誰的步數少。'
-            : '網站部署到網路上之後，這裡會有可以直接點開的挑戰連結。'))),
+            ? t('朋友打開挑戰連結，會看到你的成績，過關後可以比比看誰的步數少。')
+            : t('網站部署到網路上之後，這裡會有可以直接點開的挑戰連結。')))),
       actions: actions,
     }).then((v) => { if (url) URL.revokeObjectURL(url); return v; });
   }
