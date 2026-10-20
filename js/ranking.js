@@ -11,8 +11,8 @@
   const HRD = root.HRD || (root.HRD = {});
   const E = HRD.engine || require('./engine.js');
 
-  const TOP = 50; // 總排行顯示幾名
-  const LEVEL_TOP = 20; // 每關顯示幾名
+  const TOP = 20; // 總排行一次讀幾名
+  const LEVEL_TOP = 20; // 每關排行一次讀幾名
   const MS_PER_STEP = 200; // 每一步至少要這麼久，太快的成績規則會擋下
 
   /* ---------- 走法：每一步 3 個字（棋子編號、目的地欄、列），都用 base36 ---------- */
@@ -127,26 +127,56 @@
     return { rank: fewer.data().count + faster.data().count + 1, record: m };
   }
 
-  /* 每關排行：照走法驗證過的前幾名；名字用玩家現在的公開名稱 */
-  async function levelBoard(levelId, n) {
+  /*
+   * 每關排行的一段（步數少的在前，再比用時），照走法驗證過的才算。
+   * after：上一段的 next；limit：這一段讀幾筆。名字要另外用 currentNames 換成玩家現在的公開名稱
+   */
+  async function levelBoard(levelId, opts) {
+    const o = opts || {};
+    const n = o.limit || LEVEL_TOP;
     const level = builtin(levelId);
     const { F, db } = await fs();
-    const snap = await F.getDocs(F.query(F.collection(db, 'boards', levelId, 'records'), F.orderBy('steps'), F.orderBy('timeMs'), F.limit(n || LEVEL_TOP)));
+    const parts = [F.orderBy('steps'), F.orderBy('timeMs')];
+    if (o.after) parts.push(F.startAfter(o.after));
+    parts.push(F.limit(n));
+    const snap = await F.getDocs(F.query(F.collection(db, 'boards', levelId, 'records'), ...parts));
     const rows = snap.docs.map((d) => Object.assign({ uid: d.id }, d.data())).filter((x) => verify(level, x));
-    const uids = rows.map((r) => r.uid);
-    for (let i = 0; i < uids.length; i += 30) {
-      const ps = await F.getDocs(F.query(F.collection(db, 'players'), F.where(F.documentId(), 'in', uids.slice(i, i + 30))));
+    return { items: rows, next: snap.docs.length === n ? snap.docs[snap.docs.length - 1] : null };
+  }
+
+  /* 紀錄上存的是當時的名字，換成玩家現在的公開名稱（換過的不再查） */
+  async function currentNames(rows) {
+    const todo = rows.filter((r) => !r.named);
+    if (!todo.length) return rows;
+    const { F, db } = await fs();
+    for (let i = 0; i < todo.length; i += 30) {
+      const part = todo.slice(i, i + 30);
+      const ps = await F.getDocs(F.query(F.collection(db, 'players'), F.where(F.documentId(), 'in', part.map((r) => r.uid))));
       const names = {};
       ps.docs.forEach((d) => { names[d.id] = d.data().name; });
-      rows.forEach((r) => { if (names[r.uid]) r.name = names[r.uid]; });
+      part.forEach((r) => { if (names[r.uid]) r.name = names[r.uid]; r.named = true; });
     }
     return rows;
   }
 
-  async function players(n) {
+  /* 總排行的一段：score 高的在前 */
+  async function players(opts) {
+    const o = opts || {};
+    const n = o.limit || TOP;
     const { F, db } = await fs();
-    const snap = await F.getDocs(F.query(F.collection(db, 'players'), F.orderBy('score', 'desc'), F.limit(n || TOP)));
-    return snap.docs.map((d) => Object.assign({ uid: d.id }, d.data()));
+    const parts = [F.orderBy('score', 'desc')];
+    if (o.after) parts.push(F.startAfter(o.after));
+    parts.push(F.limit(n));
+    const snap = await F.getDocs(F.query(F.collection(db, 'players'), ...parts));
+    return { items: snap.docs.map((d) => Object.assign({ uid: d.id }, d.data())), next: snap.docs.length === n ? snap.docs[snap.docs.length - 1] : null };
+  }
+
+  /* 上榜人數：沒給 levelId 是總排行，有給是那一關（沒通過驗證的紀錄也算進去） */
+  async function count(levelId) {
+    const { F, db } = await fs();
+    const col = levelId ? F.collection(db, 'boards', levelId, 'records') : F.collection(db, 'players');
+    const snap = await F.getCountFromServer(col);
+    return snap.data().count;
   }
 
   /* 我的總成績和名次 */
@@ -216,7 +246,7 @@
   }
 
   HRD.ranking = {
-    TOP, LEVEL_TOP, MS_PER_STEP, available, submit, levelRank, levelBoard, players, me, rename,
+    TOP, LEVEL_TOP, MS_PER_STEP, available, submit, levelRank, levelBoard, currentNames, players, count, me, rename,
     encodeMoves, decodeMoves, replay, verify, replayDialog,
   };
 })(typeof window !== 'undefined' ? window : globalThis);

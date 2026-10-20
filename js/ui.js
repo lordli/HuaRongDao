@@ -200,6 +200,43 @@
     return cols * (cols <= 2 ? (narrowRows || 4) : (rows || 3));
   }
 
+  /*
+   * 雲端清單：一段一段往後讀（Firestore 的 startAfter），讀過的留著，往回翻不用再讀。
+   * fetch(after, n) → { items, next }：after 是上一段的 next；next 是 null 表示讀完了。
+   * 每次至少讀 min 筆（被藏起來、沒通過驗證的會在 fetch 裡濾掉，所以實際拿到的可能比較少）。
+   */
+  function cursorList(fetch, min) {
+    const items = [];
+    let next = null, done = false, chain = Promise.resolve();
+    async function fill(n) {
+      while (!done && items.length < n) {
+        const res = await fetch(next, Math.max(min || 1, n - items.length));
+        items.push(...res.items);
+        next = res.next;
+        if (!next) done = true;
+      }
+    }
+    return {
+      items,
+      get done() { return done; },
+      /* 至少讀到 n 筆（或讀完）；同時叫好幾次會排隊，不會重複讀同一段 */
+      ensure(n) { const p = chain.then(() => fill(n)); chain = p.catch(() => {}); return p; },
+    };
+  }
+
+  /*
+   * 從 cursorList 拿第 page 頁（多讀一筆，才知道後面還有沒有）。
+   * total：伺服器上數的筆數，用來估總頁數；不知道就給 null。
+   * 回傳 { page, pages, rows }：page 可能比要的小（估的總數比實際多，最後幾頁其實是空的）。
+   */
+  async function cursorPage(list, page, size, total) {
+    await list.ensure((page + 1) * size + 1);
+    const last = Math.max(0, Math.ceil(list.items.length / size) - 1);
+    page = Math.min(Math.max(0, page), last);
+    const pages = list.done ? last + 1 : Math.max(page + 2, Math.ceil((total || 0) / size));
+    return { page, pages, rows: list.items.slice(page * size, (page + 1) * size) };
+  }
+
   function confirmDialog(title, message, okLabel, danger) {
     return dialog({
       title: title,
@@ -270,5 +307,5 @@
   }
 
   const HRD = root.HRD || (root.HRD = {});
-  HRD.ui = { h, icon, toast, dialog, confirmDialog, pager, pageNumbers, gridPageSize, copyText, saveFile, formatTime, formatDate };
+  HRD.ui = { h, icon, toast, dialog, confirmDialog, pager, pageNumbers, gridPageSize, cursorList, cursorPage, copyText, saveFile, formatTime, formatDate };
 })(typeof window !== 'undefined' ? window : globalThis);

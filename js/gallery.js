@@ -104,20 +104,35 @@
     return { id: snap.id, data: d, level: level };
   }
 
-  /* sort：new 最新、likes 最多讚、clears 最多人過關；search：名稱開頭 */
+  /*
+   * sort：new 最新、likes 最多讚、clears 最多人過關；search：名稱開頭。
+   * after：上一段的 next；limit：這一段讀幾筆（被檢舉藏起來的會濾掉，所以 items 可能比較少）
+   */
   async function list(opts) {
     const o = opts || {};
+    const n = o.limit || PAGE;
     const { F, db } = await fs();
     const col = F.collection(db, 'levels');
     const parts = [];
     if (o.search) parts.push(F.orderBy('name'), F.startAt(o.search), F.endAt(o.search + ''));
     else parts.push(F.orderBy(o.sort === 'likes' ? 'likes' : o.sort === 'clears' ? 'clears' : 'createdAt', 'desc'));
     if (o.after) parts.push(F.startAfter(o.after));
-    parts.push(F.limit(PAGE));
+    parts.push(F.limit(n));
     const snap = await F.getDocs(F.query(col, ...parts));
     const me = C().currentUser();
     const items = snap.docs.map(item).filter((x) => x && (x.data.reports < HIDE_REPORTS || (me && x.data.authorUid === me.uid)));
-    return { items: items, next: snap.docs.length === PAGE ? snap.docs[snap.docs.length - 1] : null };
+    return { items: items, next: snap.docs.length === n ? snap.docs[snap.docs.length - 1] : null };
+  }
+
+  /* 廣場上大概有幾個關卡（用來算頁數）；搜尋時被檢舉藏起來的也算進去 */
+  async function count(opts) {
+    const o = opts || {};
+    const { F, db } = await fs();
+    const col = F.collection(db, 'levels');
+    const q = o.search ? F.query(col, F.where('name', '>=', o.search), F.where('name', '<=', o.search + ''))
+      : F.query(col, F.where('reports', '<', HIDE_REPORTS));
+    const snap = await F.getCountFromServer(q);
+    return snap.data().count;
   }
 
   async function mine() {
@@ -408,7 +423,7 @@
   HRD.gallery = {
     PAGE, layoutId, layoutKey, builtinMatch,
     available: () => !!(HRD.cloud && HRD.cloud.canSignIn()),
-    cached, get, list, mine, publish, update, unpublish, liked, setLike, submitRecord, topRecords, report,
+    cached, get, list, count, mine, publish, update, unpublish, liked, setLike, submitRecord, topRecords, report,
     publicName, publishDialog, editDialog, pickDialog, reportDialog, errorText, millis,
   };
 })(typeof window !== 'undefined' ? window : globalThis);

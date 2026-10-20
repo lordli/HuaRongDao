@@ -761,7 +761,6 @@ a.menu-item { text-decoration: none; }
 .gallery-toolbar .field-grow { max-width: 320px; }
 .gallery-stats { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; margin-top: auto; padding-top: 2px; font-size: 14px; color: var(--muted); }
 .gallery-stat { display: inline-flex; align-items: center; gap: 5px; }
-.gallery-more { justify-content: center; }
 .gallery-detail { display: grid; grid-template-columns: minmax(0, 360px) minmax(0, 1fr); gap: 32px 40px; align-items: start; }
 .gallery-preview { display: flex; flex-direction: column; align-items: center; }
 .gallery-preview .board { --exit-bg: var(--bg); width: 100%; }
@@ -900,6 +899,14 @@ html[lang="en"] .brand-name, html[lang="en"] .lead-title, html[lang="en"] .play-
 }
 .mine-toolbar { justify-content: space-between; }
 .mine-page > .pager:last-child { margin-top: 4px; }
+/* 關卡廣場、排行榜：上面一列是筆數和小分頁列 */
+.list-bar { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px 16px; }
+.list-bar:has(> .list-count:empty):has(> .pager[hidden]) { display: none; }
+.list-count { color: var(--muted); font-variant-numeric: tabular-nums; }
+.list-bar > .pager { margin-left: auto; }
+.gallery-page > .pager:last-child { margin-top: 4px; }
+.rank-board { display: flex; flex-direction: column; gap: 12px; }
+.level-grid.is-loading, .rank-list.is-loading { opacity: 0.5; transition: opacity 0.15s; pointer-events: none; }
 
 /* ---------- 手機遊戲畫面：棋盤依畫面高度縮小 ---------- */
 @media (max-width: 720px) {

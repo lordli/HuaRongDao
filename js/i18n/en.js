@@ -418,7 +418,6 @@
     "{likes} 個讚": {"one":"{likes} like","other":"{likes} likes"},
     "{clears} 人過關": "{clears} cleared",
     "被檢舉，已隱藏": "Reported, hidden",
-    "載入更多": "Load more",
     "排序": "Sort",
     "關卡名稱開頭": "Level name starts with…",
     "找不到名稱以「{query}」開頭的關卡。": "No levels with names starting with “{query}”.",
@@ -951,5 +950,8 @@
     "空格擠在左上角，橫將、直將四面埋伏，要一百多步才能脫身。": "The empty cells are squeezed into the top-left corner while horizontal and vertical generals lie in ambush all around. Escaping takes more than a hundred moves.",
     "小兵探路": "Soldiers Scout Ahead",
     "三員橫將疊在右下角，兩個空格分散，小兵得四處探路。": "Three horizontal generals are stacked in the bottom-right corner and the two empty cells are far apart, so the soldiers have to scout all over.",
+    "共 {n} 個關卡": {"one":"{n} level","other":"{n} levels"},
+    "{n} 人上榜": {"one":"{n} player ranked","other":"{n} players ranked"},
+    "跳到我的名次": "Jump to my rank",
   });
 })(typeof window !== 'undefined' ? window : globalThis);

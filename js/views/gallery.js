@@ -65,17 +65,29 @@
     function build() {
       let tab = app.state.galleryTab || 'new';
       let query = '';
-      let next = null;
+      let src = null;
       let token = 0;
+      let pageSize = 12;
+      // 每個分頁（排序）看到第幾個關卡：從關卡頁回來時停在同一頁；搜尋都從第一頁開始
+      const seen = app.state.gallerySeen || (app.state.gallerySeen = {});
+      const key = () => tab + '|' + query;
       const grid = h('div', { class: 'level-grid gallery-grid' });
       const status = h('p', { class: 'empty-line', role: 'status', 'aria-live': 'polite' });
-      const more = h('button', { type: 'button', class: 'btn btn-secondary', hidden: true, onclick: () => load(true) }, t('載入更多'));
+      const countEl = h('span', { class: 'list-count' });
+      let topPager = HRD.ui.pager(0, 1, null, true), bottomPager = HRD.ui.pager(0, 1);
+      const bar = h('div', { class: 'list-bar' }, countEl, topPager);
       const tabs = h('div', { class: 'tabs', role: 'group', 'aria-label': t('排序') });
       const search = h('input', { id: 'gallery-search', type: 'search', class: 'input input-search', placeholder: t('關卡名稱開頭'), autocomplete: 'off' });
       let timer = null;
       search.addEventListener('input', () => {
         clearTimeout(timer);
-        timer = setTimeout(() => { query = search.value.trim(); load(false); }, 350);
+        timer = setTimeout(() => {
+          const q = search.value.trim();
+          if (q === query) return;
+          query = q;
+          delete seen[key()];
+          reset();
+        }, 350);
       });
 
       function drawTabs() {
@@ -85,37 +97,60 @@
         TABS.filter((tt) => !tt.signedIn || signed).forEach((tt) => {
           tabs.appendChild(h('button', {
             type: 'button', class: 'tab', 'aria-pressed': tt.id === tab ? 'true' : 'false',
-            onclick: () => { tab = tt.id; app.state.galleryTab = tt.id; drawTabs(); load(false); },
+            onclick: () => { if (tt.id === tab) return; tab = tt.id; app.state.galleryTab = tt.id; drawTabs(); reset(); },
           }, tt.name));
         });
       }
 
-      async function load(append) {
+      /* 換排序、搜尋、登入登出：重新從雲端讀 */
+      function reset() {
+        const sort = tab, q = query;
+        const fetch = sort === 'mine'
+          ? async () => { const all = await G().mine(); return { items: all.filter((x) => !q || x.data.name.startsWith(q)), next: null }; }
+          : (after, n) => G().list({ sort: sort, search: q, after: after, limit: n });
+        src = { list: HRD.ui.cursorList(fetch, 24), total: sort === 'mine' ? Promise.resolve(null) : G().count({ search: q }).catch(() => null) };
+        grid.textContent = '';
+        countEl.textContent = '';
+        pagers(0, 1);
+        show(Math.floor((seen[key()] || 0) / pageSize));
+      }
+
+      async function show(page, fromBottom) {
         const my = ++token;
-        if (!append) { grid.textContent = ''; next = null; more.hidden = true; }
+        const cur = src;
         status.textContent = t('載入中…');
-        more.disabled = true;
+        grid.classList.add('is-loading');
         try {
-          let res;
-          if (tab === 'mine') {
-            const all = await G().mine();
-            res = { items: all.filter((x) => !query || x.data.name.startsWith(query)), next: null };
-          } else {
-            res = await G().list({ sort: tab, search: query, after: append ? next : null });
-          }
+          const [total] = await Promise.all([cur.total, cur.list.ensure((page + 1) * pageSize + 1)]);
+          const res = await HRD.ui.cursorPage(cur.list, page, pageSize, total);
           if (my !== token || !alive) return;
-          res.items.forEach((x) => grid.appendChild(card(x)));
-          next = res.next;
-          more.hidden = !next;
-          more.disabled = false;
-          status.textContent = grid.children.length ? ''
+          seen[key()] = res.page * pageSize;
+          grid.classList.remove('is-loading');
+          grid.textContent = '';
+          res.rows.forEach((x) => grid.appendChild(card(x)));
+          const n = cur.list.done ? cur.list.items.length : total;
+          countEl.textContent = n ? t('共 {n} 個關卡', { n }) : '';
+          status.textContent = res.rows.length ? ''
             : query ? t('找不到名稱以「{query}」開頭的關卡。', { query })
             : tab === 'mine' ? t('你還沒有發佈關卡。') : t('廣場上還沒有關卡，來發佈第一個吧！');
+          pagers(res.page, res.pages);
+          if (fromBottom) {
+            // 從下面的分頁列換頁：捲回列表開頭，鍵盤焦點移到第一個關卡
+            bar.scrollIntoView({ block: 'start', behavior: HRD.settings.reduceMotion() ? 'auto' : 'smooth' });
+            const first = grid.querySelector('a');
+            if (first) first.focus({ preventScroll: true });
+          }
         } catch (e) {
           if (my !== token || !alive) return;
+          grid.classList.remove('is-loading');
           status.textContent = '';
-          status.append(t('載入失敗：{errorText} ', { errorText: G().errorText(e) }), h('button', { type: 'button', class: 'text-btn', onclick: () => load(append) }, t('再試一次')));
+          status.append(t('載入失敗：{errorText} ', { errorText: G().errorText(e) }), h('button', { type: 'button', class: 'text-btn', onclick: () => show(page, fromBottom) }, t('再試一次')));
         }
+      }
+
+      function pagers(page, pages) {
+        topPager.replaceWith(topPager = HRD.ui.pager(page, pages, (n) => show(n), true));
+        bottomPager.replaceWith(bottomPager = HRD.ui.pager(page, pages, (n) => show(n, true)));
       }
 
       container.appendChild(h('div', { class: 'page gallery-page' },
@@ -130,16 +165,28 @@
           h('div', { class: 'field field-grow' },
             h('label', { class: 'field-label sr-only', for: 'gallery-search' }, t('搜尋關卡名稱')),
             h('div', { class: 'search-box' }, icon('search', 18, 'search-icon'), search))),
-        grid, status, h('div', { class: 'btn-row gallery-more' }, more)));
+        bar, grid, status, bottomPager));
 
+      pageSize = HRD.ui.gridPageSize(grid);
       drawTabs();
-      load(false);
+      reset();
       // 登入、登出後「我發佈的」分頁要出現或消失
       let signed = !!HRD.store.account();
       offs.push(HRD.store.onChange(() => {
         const now = !!HRD.store.account();
-        if (now !== signed) { signed = now; drawTabs(); if (tab === 'mine' || !now) load(false); }
+        if (now !== signed) { signed = now; drawTabs(); reset(); }
       }));
+      // 視窗變寬變窄：一頁放的數量跟著格線欄數變，停在原本看的那幾個關卡
+      let resizeTimer = null;
+      const onResize = () => {
+        clearTimeout(resizeTimer);
+        resizeTimer = setTimeout(() => {
+          const size = HRD.ui.gridPageSize(grid);
+          if (size !== pageSize) { pageSize = size; show(Math.floor((seen[key()] || 0) / pageSize)); }
+        }, 150);
+      };
+      root.addEventListener('resize', onResize);
+      offs.push(() => { root.removeEventListener('resize', onResize); clearTimeout(resizeTimer); clearTimeout(timer); });
     }
 
     return function unmount() { alive = false; offs.forEach((off) => off()); };
