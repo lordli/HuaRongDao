@@ -32,7 +32,14 @@
     const notice = h('div', { class: 'notice' });
     const grid = h('div', { class: 'level-grid mine-grid' });
     const search = h('input', { id: 'mine-search', type: 'search', class: 'input input-search', placeholder: t('關卡名稱'), autocomplete: 'off' });
-    search.addEventListener('input', () => { query = search.value.trim(); draw(); });
+    search.addEventListener('input', () => { query = search.value.trim(); app.state.mineSeen = 0; draw(); });
+    /*
+     * 分頁：手機一排一個、一頁 4 個；寬一點的畫面一頁 3 排。「新增空白關卡」排在最後一頁的最後面。
+     * 新增、複製、匯入或編輯過關卡（最新的那一關換了）就回到第 1 頁，才看得到它。
+     */
+    let pageSize = 12;
+    let topPager = h('nav', { hidden: true });
+    let bottomPager = h('nav', { hidden: true });
 
     const page = h('div', { class: 'page mine-page' },
       h('div', { class: 'section-head' },
@@ -42,11 +49,13 @@
           h('button', { type: 'button', class: 'btn btn-secondary', onclick: exportAll }, icon('download', 18), t('全部匯出')),
           h('a', { class: 'btn btn-primary', href: '#/edit/new' }, icon('plus', 18), t('新增關卡')))),
       notice,
-      h('div', { class: 'toolbar' },
+      h('div', { class: 'toolbar mine-toolbar' },
         h('div', { class: 'field field-grow' },
           h('label', { class: 'field-label', for: 'mine-search' }, t('搜尋')),
-          h('div', { class: 'search-box' }, icon('search', 18, 'search-icon'), search))),
-      grid);
+          h('div', { class: 'search-box' }, icon('search', 18, 'search-icon'), search)),
+        topPager),
+      grid,
+      bottomPager);
     container.appendChild(page);
 
     function exportAll() {
@@ -121,12 +130,34 @@
           h('div', { class: 'btn-row' },
             h('a', { class: 'btn btn-primary', href: '#/edit/new' }, icon('plus', 18), t('新增關卡')),
             h('button', { type: 'button', class: 'btn btn-secondary', onclick: () => HRD.io.importDialog() }, icon('upload', 18), t('匯入關卡')))));
+        pagers(0, 1);
         return;
       }
       const shown = all.filter((l) => !query || l.name.toLowerCase().includes(query.toLowerCase()));
-      shown.forEach((l) => grid.appendChild(card(l)));
-      if (!shown.length) grid.appendChild(h('p', { class: 'empty-line' }, t('找不到名稱含「{query}」的關卡。', { query })));
-      else grid.appendChild(h('a', { class: 'add-card', href: '#/edit/new' }, h('span', { class: 'add-icon' }, icon('plus', 24)), h('strong', {}, t('新增空白關卡')), h('span', {}, t('或從內建關卡改起'))));
+      if (!shown.length) { grid.appendChild(h('p', { class: 'empty-line' }, t('找不到名稱含「{query}」的關卡。', { query }))); pagers(0, 1); return; }
+      const top = all[0].id + '@' + all[0].updatedAt;
+      if (app.state.mineTop !== top) { app.state.mineTop = top; app.state.mineSeen = 0; }
+      const items = shown.map((l) => () => card(l));
+      items.push(() => h('a', { class: 'add-card', href: '#/edit/new' }, h('span', { class: 'add-icon' }, icon('plus', 24)), h('strong', {}, t('新增空白關卡')), h('span', {}, t('或從內建關卡改起'))));
+      const pages = Math.ceil(items.length / pageSize);
+      const page = Math.min(Math.floor((app.state.mineSeen || 0) / pageSize), pages - 1);
+      app.state.mineSeen = page * pageSize;
+      items.slice(page * pageSize, (page + 1) * pageSize).forEach((make) => grid.appendChild(make()));
+      pagers(page, pages);
+    }
+
+    function pagers(page, pages) {
+      const go = (fromBottom) => (n) => {
+        app.state.mineSeen = n * pageSize;
+        draw();
+        if (!fromBottom) return;
+        // 從下面的分頁列換頁：捲回列表開頭，鍵盤焦點移到第一個關卡
+        grid.scrollIntoView({ block: 'start', behavior: HRD.settings.reduceMotion() ? 'auto' : 'smooth' });
+        const first = grid.querySelector('a');
+        if (first) first.focus({ preventScroll: true });
+      };
+      topPager.replaceWith(topPager = HRD.ui.pager(page, pages, go(false), true));
+      bottomPager.replaceWith(bottomPager = HRD.ui.pager(page, pages, go(true)));
     }
 
     const onDoc = (e) => { if (openMenu && !openMenu.menu.contains(e.target)) closeMenu(); };
@@ -134,11 +165,20 @@
     document.addEventListener('click', onDoc);
     document.addEventListener('keydown', onKey);
     const off = HRD.store.onChange(draw);
+    pageSize = HRD.ui.gridPageSize(grid, 3, 4);
     draw();
     HRD.io.verifyPending();
+    let resizeTimer = null;
+    const onResize = () => {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(() => { const size = HRD.ui.gridPageSize(grid, 3, 4); if (size !== pageSize) { pageSize = size; draw(); } }, 150);
+    };
+    root.addEventListener('resize', onResize);
 
     return function unmount() {
       off();
+      root.removeEventListener('resize', onResize);
+      clearTimeout(resizeTimer);
       document.removeEventListener('click', onDoc);
       document.removeEventListener('keydown', onKey);
     };

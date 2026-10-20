@@ -194,6 +194,12 @@
     return nav;
   }
 
+  /* 一頁放滿幾排：欄數跟著格線（CSS grid）的寬度；欄數少（手機）時多放幾排 */
+  function gridPageSize(grid, rows, narrowRows) {
+    const cols = getComputedStyle(grid).gridTemplateColumns.split(' ').filter(Boolean).length || 1;
+    return cols * (cols <= 2 ? (narrowRows || 4) : (rows || 3));
+  }
+
   function confirmDialog(title, message, okLabel, danger) {
     return dialog({
       title: title,
@@ -264,5 +270,5 @@
   }
 
   const HRD = root.HRD || (root.HRD = {});
-  HRD.ui = { h, icon, toast, dialog, confirmDialog, pager, pageNumbers, copyText, saveFile, formatTime, formatDate };
+  HRD.ui = { h, icon, toast, dialog, confirmDialog, pager, pageNumbers, gridPageSize, copyText, saveFile, formatTime, formatDate };
 })(typeof window !== 'undefined' ? window : globalThis);

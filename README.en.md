@@ -25,7 +25,7 @@ It is a static, front-end-only website: no server of your own and no build step.
 | Clearing a level | Moves, time, stars (3 stars at the minimum, 2 within 1.5×; using 1–2 hints caps at 2 stars, 3 or more at 1 star), best records, next level |
 | Progress | The current game is saved automatically; the home page offers "continue" |
 | Level editor | Place the four piece types, drag, delete, mirror, clear, undo/redo, rename pieces, start from a built-in level; live check with the minimum number of moves; test play before saving; warns about unsaved changes |
-| My levels | Search, play, edit, duplicate, delete (with undo), export one or all, import JSON (preview first, duplicate names renamed) |
+| My levels | Search, play, edit, duplicate, delete (with undo), export one or all, import JSON (preview first, duplicate names renamed); paginated (4 per page on phones), returning to page 1 after you add or edit a level |
 | Sharing | Every level gets a share code and a share link; friends see a preview and can play right away or add it to their levels; import accepts a code, a link or a whole chat message |
 | Sharing scores | Share after clearing or from "your best": a text message (moves, minimum, stars, time, hints), a 1080 × 1350 score card image, and a challenge link; when a friend clears via the challenge link, the game compares your results |
 | Touch and sound | Swipe a piece to move it; the phone layout fits the board and toolbar on one screen; wooden knocks, wall bumps, hint and clear sounds synthesized with Web Audio (no audio files); vibration on touch devices |
@@ -35,7 +35,7 @@ It is a static, front-end-only website: no server of your own and no build step.
 | Level gallery | Publish your levels (each layout only once, mirror images count as the same; built-in layouts cannot be published); sort by newest, most likes or most clears, search by name prefix; likes, clear counts and the top 5 records per level; authors can edit the name and description or unpublish; levels reported 3 times are hidden from the list |
 | Leaderboard | Overall (stars, then levels cleared) and per level (moves, then time), with your own rank; only built-in levels, only results without hints or auto-solve; every record stores its moves and can be replayed; set your public name in Settings |
 | Languages | Traditional Chinese, Simplified Chinese and English; follows the browser language by default and can be switched in Settings or the footer, taking effect immediately; built-in level names, descriptions and the generals' names are translated too, while names players typed stay as they are |
-| Other | Three columns on desktop, two on tablets, one on phones; light and dark themes; keyboard support |
+| Other | Three columns on desktop, two on tablets, one on phones; light and dark themes; keyboard support; on phones the board shrinks to the screen height and the page scrolls to it, so the board, exit and bottom buttons fit on one screen |
 
 ## Where data is stored
 

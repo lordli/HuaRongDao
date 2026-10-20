@@ -117,10 +117,7 @@
     let bottomPager = h('nav', { hidden: true });
     const levelsSection = h('section', { class: 'levels', 'aria-labelledby': 'levels-title' });
     const listKey = () => filter + (unsolvedOnly.checked ? ':unsolved' : '');
-    function measure() {
-      const cols = getComputedStyle(grid).gridTemplateColumns.split(' ').filter(Boolean).length || 1;
-      return cols * (cols <= 2 ? 4 : 3);
-    }
+    const measure = () => HRD.ui.gridPageSize(grid);
 
     function drawGrid(scroll) {
       const shown = levels.filter((l) => (filter === 'all' || l.category === filter) && !(unsolvedOnly.checked && isSolved(l)));

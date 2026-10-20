@@ -898,3 +898,19 @@ html[lang="en"] .brand-name, html[lang="en"] .lead-title, html[lang="en"] .play-
   .pager:not(.pager-compact) .pager-status { display: inline; }
   .levels .section-head { align-items: center; }
 }
+.mine-toolbar { justify-content: space-between; }
+.mine-page > .pager:last-child { margin-top: 4px; }
+
+/* ---------- 手機遊戲畫面：棋盤依畫面高度縮小 ---------- */
+@media (max-width: 720px) {
+  /*
+   * 棋盤以外還要留的高度：上方步數列、下方出口標示和提示文字、底部按鈕列。
+   * 棋盤高度不超過「可見高度 − 這些」，打開關卡時捲到棋盤，整個操作區就在一個畫面裡。
+   * 不支援 dvh 的瀏覽器用 vh。
+   */
+  .play-page { --stage-reserve: calc(212px + env(safe-area-inset-bottom, 0px)); }
+  .play-page .board-play {
+    width: min(100%, max(200px, calc((100vh - var(--stage-reserve) - 2 * var(--pad)) * var(--ratio) + 2 * var(--pad))));
+    width: min(100%, max(200px, calc((100dvh - var(--stage-reserve) - 2 * var(--pad)) * var(--ratio) + 2 * var(--pad))));
+  }
+}

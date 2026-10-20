@@ -70,6 +70,8 @@
       this.bed.style.aspectRatio = this.geo.bw + ' / ' + this.geo.bh;
       // 字級、圓角以「一格」為單位，盤面多寬都一樣好看
       this.el.style.setProperty('--u', (100 / this.geo.bw) + 'cqw');
+      // 寬高比：手機版用來依畫面高度限制棋盤大小（見 style.css 的 --stage-reserve）
+      this.el.style.setProperty('--ratio', (this.geo.bw / this.geo.bh).toFixed(4));
       // 直長的盤面依高度限制寬度（外框寬度另計）
       this.el.style.maxWidth = 'min(100%, calc(' + Math.round(this.maxBed * this.geo.bw / this.geo.bh) + 'px + 2 * var(--pad)))';
       this.cells.textContent = '';

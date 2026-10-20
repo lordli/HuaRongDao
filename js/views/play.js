@@ -636,6 +636,15 @@
     render();
     if (els.rankLink) HRD.cloud.ready().then(() => { els.rankLink.hidden = !HRD.ranking.available(); });
 
+    // 手機：一打開就把棋盤捲到畫面上方，整個棋盤、出口和底部按鈕都看得到（本來就放得下就不捲）
+    if (root.matchMedia && root.matchMedia('(max-width: 720px)').matches) {
+      requestAnimationFrame(() => {
+        const s = stage.getBoundingClientRect();
+        const bar = controls.getBoundingClientRect().height;
+        if (s.bottom > root.innerHeight - bar && s.top > 8) root.scrollTo({ top: root.scrollY + s.top - 8, behavior: 'auto' });
+      });
+    }
+
     return function unmount() {
       minToken.aborted = true;
       stopAuto();
