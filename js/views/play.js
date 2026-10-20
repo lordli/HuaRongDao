@@ -74,6 +74,7 @@
       h('dl', { class: 'tiles' },
         h('div', { class: 'tile' }, h('dt', {}, '最少步數'), els.min = h('dd', {}, level.minMoves != null ? level.minMoves + ' 步' : kind === 'shared' ? '計算中…' : '—')),
         h('div', { class: 'tile' }, h('dt', {}, '你的最佳'), els.best)),
+      kind === 'builtin' ? (els.rankLink = h('a', { class: 'rank-link', href: '#/ranking/' + level.id, hidden: true }, icon('trophy', 16), '本關排行榜')) : null,
       h('div', { class: 'goal-note' }, icon('flag', 20), h('p', {}, h('strong', {}, '目標：'), '把曹操移到' + E.exitText(startState) + '的出口。')),
       h('details', { class: 'howto', open: true },
         h('summary', {}, '怎麼玩'),
@@ -367,6 +368,20 @@
       return line;
     }
 
+    /* 內建關卡：把成績送到排行榜（沒用提示才算） */
+    function rankNote(ms) {
+      const line = h('p', { class: 'win-sub', role: 'status' }, '正在記錄到排行榜…');
+      HRD.ranking.submit(level.id, { hist: hist.slice(), timeMs: ms, hints: hintsUsed, auto: autoUsed }).then((r) => {
+        const at = r.rank ? '這一關第 ' + r.rank + ' 名' : '';
+        line.textContent = r.status === 'hints' ? '這局用了提示，不列入排行榜。不用提示再挑戰一次吧！'
+          : r.status === 'signed-out' ? '登入後不用提示過關，成績就會列入排行榜。'
+          : r.status === 'first' || r.status === 'better' ? '已列入排行榜' + (at ? '：' + at + '！' : '！')
+          : '排行榜保留你之前比較好的成績' + (at ? '（' + at + '）' : '') + '。';
+        if (r.status === 'first' || r.status === 'better') line.className = 'win-best';
+      }, (e) => { line.textContent = '成績沒有記錄到排行榜：' + HRD.gallery.errorText(e); });
+      return line;
+    }
+
     function shareBest() {
       const p = key ? HRD.store.progress(key) : null;
       if (!p || p.bestSteps == null) return;
@@ -424,7 +439,8 @@
           note ? h('p', { class: 'win-note' }, note) : null,
           newBest && progress && progress.bestSteps != null ? h('p', { class: 'win-best' }, '新紀錄！比上次少了 ' + (progress.bestSteps - steps) + ' 步') : null,
           challenge && !autoUsed ? compareNote(steps, ms) : null,
-          kind === 'public' && !autoUsed ? galleryNote(steps, ms) : null),
+          kind === 'public' && !autoUsed ? galleryNote(steps, ms) : null,
+          kind === 'builtin' && !autoUsed && HRD.ranking.available() ? rankNote(ms) : null),
         actions: actions,
       }).then((v) => {
         if (v === 'next') app.go('#/play/' + ctx.nextKey.replace(':', '/'));
@@ -618,6 +634,7 @@
     }
 
     render();
+    if (els.rankLink) HRD.cloud.ready().then(() => { els.rankLink.hidden = !HRD.ranking.available(); });
 
     return function unmount() {
       minToken.aborted = true;

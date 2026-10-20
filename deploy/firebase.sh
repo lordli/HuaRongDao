@@ -83,8 +83,8 @@ JSON
   rm -f .firebase-auth.json
 fi
 
-# 6. 上傳網站和資料庫規則
-$FB deploy --only hosting,firestore:rules --project "$PROJECT" -m "華容道 $(date +%Y-%m-%d)"
+# 6. 上傳網站、資料庫規則和索引（排行榜依步數、用時排序要用）
+$FB deploy --only hosting,firestore:rules,firestore:indexes --project "$PROJECT" -m "華容道 $(date +%Y-%m-%d)"
 
 echo
 echo "完成！網址：https://$PROJECT.web.app"

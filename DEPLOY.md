@@ -39,7 +39,7 @@ bash deploy/firebase.sh 你的專案ID
   2. 建立 Firebase 網頁應用程式（網站靠它自動取得登入設定）
   3. 建立 Firestore 資料庫，放在 `asia-east1`（台灣）；要換地區可以先設 `FIRESTORE_REGION=asia-northeast1`
   4. 開啟登入方式：Google 帳號、電子郵件／密碼（只做一次；失敗時會印出手動開啟的步驟）
-  5. 上傳網站和 Firestore 安全規則（`firestore.rules`：個人資料只有自己能讀寫；關卡廣場的讚數、過關人數不能亂改）
+  5. 上傳網站、Firestore 安全規則和索引（`firestore.rules`：個人資料只有自己能讀寫；關卡廣場的讚數、過關人數，排行榜的成績都不能亂改）
 - 不想要帳號功能：`NO_ACCOUNTS=1 bash deploy/firebase.sh 你的專案ID`，只上傳網站。
 - 專案已經綁定帳單的話，Firebase 會用 Blaze 方案（用多少付多少），在免費額度內一樣是 0 元。
 - 自訂網域：Firebase 主控台 →「Hosting」→「新增自訂網域」，照指示在網域商加 DNS 記錄。
@@ -59,6 +59,7 @@ bash deploy/firebase.sh 你的專案ID
   一位玩家連續玩一小時大約 200 次寫入，所以每天約 100 位重度玩家都還在免費額度內。
 - 沒有綁帳單（Spark 免費方案）時，用量到上限當天就暫停同步，玩家照樣能玩，資料先存在瀏覽器，隔天會自動補傳。
 - 關卡廣場：打開列表讀 24 筆、看一關大約讀 7 筆、按讚或過關寫 2 筆。每天幾百位玩家逛廣場都還在免費額度內。
+- 排行榜：看總排行讀 50 筆、看一關排行讀約 40 筆（含玩家名字），過關寫 2 筆。
 
 ### 管理關卡廣場
 
@@ -74,6 +75,20 @@ bash deploy/gcs.sh huarongdao-你的專案ID
 
 - 儲存桶名稱全球唯一，被用走了就換一個。預設放在 `asia-east1`（台灣）。
 - 如果組織政策禁止公開存取（Public access prevention），這個方式會失敗，請改用方式一。
+
+## 方式三：只更新網站（服務帳號金鑰）
+
+適合在雲端環境、CI，或和其他網站共用的 Firebase 專案。只上傳網頁，不會動 Firestore、登入設定，也不會碰同一個專案裡的其他站台。
+
+```
+export HUARONG_DEPLOY_KEY_B64=…   # 服務帳號 JSON 金鑰的 base64（單行）；放在環境變數，不要放進 repo
+bash deploy/hosting-only.sh 專案ID 站台ID
+```
+
+- 服務帳號只需要「Firebase Hosting 管理員」和「服務使用情形消費者」兩個角色。
+- 預設會關掉帳號功能（帳號、同步、關卡廣場、排行榜不會出現），因為這種部署沒有權限設定 Firestore 和登入。
+  專案已經用方式一設定好的話，加上 `HUARONG_ACCOUNTS=1` 就會保留。
+- 一定要給站台 ID：同一個專案有好幾個網站時，才不會蓋到別的網站。
 
 ## 更新網站
 

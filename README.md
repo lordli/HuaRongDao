@@ -31,6 +31,7 @@
 | 自訂盤面尺寸與出口（第三版） | 盤面 3–6 欄、4–7 列；出口可以在上下左右任一邊、任何位置；編輯器可直接調整，縮小時會先確認要移除的棋子；新增「變化」分類 4 關（3 × 6、5 × 5、4 × 6、6 × 4）；分享碼、成績圖卡、匯入匯出都支援 |
 | 帳號與雲端同步（第三版） | 用 Google 帳號或電子郵件／密碼登入；自訂關卡、過關紀錄、進行中的局面和設定即時同步到其他裝置；第一次登入時可以把未登入時的資料加進帳號；離線照常玩，連上網路後自動補傳；登出、刪除帳號 |
 | 公開關卡廣場（第三版） | 把自己的關卡發佈到廣場（同一個盤面只能發佈一次，左右翻轉也算；內建關卡不能發佈）；依最新、最多讚、最多人過關排序，用名稱開頭搜尋；按讚、過關人數、每一關前 5 名的最佳紀錄；作者可以改名稱和說明、取消發佈；檢舉三次以上先從列表隱藏 |
+| 排行榜（第三版） | 總排行（星星數、再比過關數）和各關排行（步數、再比用時），顯示自己的名次；只收內建關卡、沒用提示和自動解題的成績；每筆成績附走法，可以「看走法」重播；設定頁可以改公開名稱 |
 | 其他 | 桌機三欄／平板兩欄／手機單欄、深淺色主題、鍵盤操作 |
 
 ## 資料存在哪裡
@@ -55,6 +56,17 @@
 - 規則見 `firestore.rules`；最少步數由發佈的人的瀏覽器算好送上來，玩的人打開時會再算一次。
 - 關卡廣場只在部署到 Firebase 時出現；claude.ai 預覽版和只放靜態檔的主機不會顯示。
 
+## 排行榜的資料
+
+| Firestore 路徑 | 內容 | 規則檢查 |
+| --- | --- | --- |
+| `players/{uid}` | 公開名稱、星星數、過關數、`score = 星星 × 1000 + 過關數` | 星星和過關數只能跟著某一關的紀錄一起變，差距要對得上 |
+| `boards/{關卡}/records/{uid}` | 步數、用時、走法（每步 3 個字） | 只收內建關卡；步數不少於最少步數；每步至少 0.2 秒；只能換成更好的成績 |
+
+- 內建關卡的最少步數寫在 `firestore.rules` 裡，改了 `js/levels.js` 之後要執行 `node tools/sync-rules.js`（測試會檢查有沒有同步）。
+- 規則沒辦法驗證走法本身，所以顯示各關排行時，瀏覽器會照走法重播一次，走不到出口的紀錄不顯示。總排行只看數字，沒辦法逐一驗證。
+- 依步數、用時排序要用 `firestore.indexes.json` 的複合索引，部署腳本會一起上傳。
+
 ## 檔案結構
 
 ```
@@ -69,21 +81,26 @@ js/ui.js              DOM 小工具、圖示、對話框、提示訊息
 js/cloud-config.js    帳號功能開關（'auto'／null／Firebase 設定）
 js/cloud.js           帳號登入（Google、電子郵件）與雲端同步
 js/gallery.js         關卡廣場：發佈、列表、按讚、過關紀錄、檢舉
+js/ranking.js         排行榜：送出成績、總排行、各關排行、走法重播與驗證
 js/sound.js           音效（Web Audio 合成）與震動回饋
 js/board.js           棋盤元件（遊戲、編輯器、縮圖共用）
 js/io.js              匯出、匯入、分享與分享成績的對話框、背景驗證
 js/scorecard.js       成績圖卡（canvas 產生 PNG）
-js/views/*.js         各畫面：首頁、遊戲、編輯器、我的關卡、分享的關卡、設定、關卡廣場
+js/views/*.js         各畫面：首頁、遊戲、編輯器、我的關卡、分享的關卡、設定、關卡廣場、排行榜
 js/app.js             路由與啟動
 tests/engine.test.js  引擎與內建關卡測試
 tests/share.test.js   分享碼測試
 tests/store.test.js   多台裝置同步的合併規則測試
 tests/gallery.test.js 關卡廣場的盤面 id（翻轉、內建關卡）測試
+tests/ranking.test.js 排行榜：走法編碼、重播驗證、星等、規則裡的步數有沒有同步
 tools/build-single.js 打包成單一檔案（給 Artifact 預覽）
+tools/sync-rules.js   把內建關卡的最少步數寫進 firestore.rules
 firebase.json         Firebase Hosting、Firestore 規則設定
-firestore.rules       Firestore 安全規則（個人資料、關卡廣場）
+firestore.rules       Firestore 安全規則（個人資料、關卡廣場、排行榜）
+firestore.indexes.json Firestore 複合索引（排行榜排序用）
 deploy/firebase.sh    部署到 Firebase Hosting，並開啟登入與 Firestore
 deploy/gcs.sh         部署到 Cloud Storage 公開儲存桶
+deploy/hosting-only.sh 用服務帳號金鑰只更新網站（不動資料庫和登入設定）
 ```
 
 ## 測試
@@ -154,4 +171,4 @@ HRD2-55R1-AAB..AABC.DDEFGHHIFGJJIKK-eyJ…-zn0q
 ## 之後的版本
 
 - 第二版已全部完成。
-- 第三版其餘項目：排行榜、多語系
+- 第三版其餘項目：多語系

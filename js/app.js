@@ -9,7 +9,7 @@
   let current = null;
   let ignoreHash = null;
 
-  HRD.VERSION = '0.5.0';
+  HRD.VERSION = '0.6.0';
 
   const app = {
     state: {},
@@ -73,6 +73,7 @@
     if (parts[0] === 'mine') return { view: 'mine' };
     if (parts[0] === 'settings') return { view: 'settings' };
     if (parts[0] === 'gallery') return { view: 'gallery' };
+    if (parts[0] === 'ranking') return { view: 'ranking', levelId: parts[1] ? decodeURIComponent(parts[1]) : null };
     if (parts[0] === 'g' && parts[1]) return { view: 'galleryLevel', id: decodeURIComponent(parts[1]) };
     return { view: 'home' };
   }
@@ -81,6 +82,7 @@
     const r = parse(hash);
     const section = r.view === 'editor' ? 'edit' : r.view === 'settings' ? 'settings'
       : r.view === 'gallery' || r.view === 'galleryLevel' || (r.view === 'play' && r.key.startsWith('p:')) ? 'gallery'
+      : r.view === 'ranking' ? 'ranking'
       : r.view === 'mine' || (r.view === 'play' && r.key.startsWith('c:')) ? 'mine' : 'home';
     document.querySelectorAll('[data-nav]').forEach((a) => {
       if (a.dataset.nav === section) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current');
@@ -103,6 +105,7 @@
     else if (r.view === 'mine') { result = HRD.views.mine(main, { app: app }); title = '我的關卡 · 華容道'; }
     else if (r.view === 'settings') { result = HRD.views.settings(main, { app: app }); title = '設定 · 華容道'; }
     else if (r.view === 'gallery') { result = HRD.views.gallery(main, { app: app }); title = '關卡廣場 · 華容道'; }
+    else if (r.view === 'ranking') { result = HRD.views.ranking(main, { app: app, levelId: r.levelId }); title = '排行榜 · 華容道'; }
     else if (r.view === 'galleryLevel') { result = HRD.views.galleryLevel(main, { app: app, id: r.id }); title = '關卡廣場 · 華容道'; }
     else if (r.view === 'shared') { result = HRD.views.shared(main, { app: app, code: r.code, challenge: r.challenge }); title = '朋友分享的關卡 · 華容道'; }
     else if (r.view === 'editor') { result = HRD.views.editor(main, { app: app, id: r.id }); title = '關卡編輯器 · 華容道'; }
@@ -203,6 +206,8 @@
     if (signIn) signIn.hidden = !(HRD.cloud.canSignIn() && !acc);
     const galleryLink = document.getElementById('nav-gallery');
     if (galleryLink) galleryLink.hidden = !HRD.gallery.available();
+    const rankingLink = document.getElementById('nav-ranking');
+    if (rankingLink) rankingLink.hidden = !HRD.ranking.available();
     const sig = acc ? acc.uid + '|' + acc.name + '|' + acc.photo : '';
     if (sig === headerSig) return;
     headerSig = sig;

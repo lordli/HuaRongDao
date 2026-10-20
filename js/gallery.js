@@ -120,9 +120,9 @@
   }
 
   async function mine() {
+    const { F, db } = await fs();
     const u = C().currentUser();
     if (!u) return [];
-    const { F, db } = await fs();
     const snap = await F.getDocs(F.query(F.collection(db, 'levels'), F.where('authorUid', '==', u.uid)));
     return snap.docs.map(item).filter(Boolean).sort((a, b) => millis(b.data.createdAt) - millis(a.data.createdAt));
   }
@@ -201,9 +201,10 @@
   }
 
   async function liked(id) {
+    if (!HRD.store.account()) return false;
+    const { F, db } = await fs();
     const u = C().currentUser();
     if (!u) return false;
-    const { F, db } = await fs();
     return (await F.getDoc(F.doc(db, 'levels', id, 'likes', u.uid))).exists();
   }
 
@@ -219,9 +220,10 @@
 
   /* 過關後送出成績；回傳 { status: 'first' | 'better' | 'kept' | 'signed-out', clears } */
   async function submitRecord(id, r) {
+    if (!HRD.store.account()) return { status: 'signed-out' };
+    const { F, db } = await fs();
     const u = C().currentUser();
     if (!u) return { status: 'signed-out' };
-    const { F, db } = await fs();
     const ref = levelRef(F, db, id);
     const recRef = F.doc(db, 'levels', id, 'records', u.uid);
     return F.runTransaction(db, async (tx) => {

@@ -127,6 +127,26 @@
       syncLine.append(icon(st === 'error' ? 'alert' : st === 'offline' ? 'cloudOff' : 'cloud', 18), h('span', {}, C.statusText()));
       if (syncBtn) syncBtn.disabled = st === 'syncing';
     };
+    /* 公開名稱：排行榜、關卡廣場上顯示的名字 */
+    function publicNameRow() {
+      const input = h('input', { id: 'set-public-name', class: 'input', maxlength: '20', value: HRD.gallery.publicName(), autocomplete: 'nickname' });
+      const save = h('button', { type: 'button', class: 'btn btn-secondary btn-sm' }, '儲存');
+      save.addEventListener('click', async () => {
+        const name = input.value.trim();
+        if (!name) { toast('公開名稱不能空白'); input.focus(); return; }
+        save.disabled = true;
+        HRD.store.setSetting('publicName', name);
+        try { await HRD.ranking.rename(name); toast('已更新公開名稱'); }
+        catch (e) { toast('排行榜上的名字沒有更新：' + HRD.gallery.errorText(e)); }
+        save.disabled = false;
+      });
+      return h('div', { class: 'setting-row' },
+        h('div', { class: 'setting-text' },
+          h('label', { class: 'setting-name', for: 'set-public-name' }, '公開名稱'),
+          h('p', { class: 'setting-desc' }, '顯示在排行榜、關卡廣場和過關紀錄上，不會顯示電子郵件。')),
+        h('div', { class: 'name-box' }, input, save));
+    }
+
     function drawAccount() {
       const acc = HRD.store.account();
       const sig = (C.canSignIn() ? '1' : '0') + (acc ? acc.uid + acc.name + acc.email + acc.photo : '');
@@ -148,6 +168,7 @@
                 h('strong', { class: 'account-name' }, acc.name),
                 h('span', { class: 'muted account-email' }, [acc.email, acc.method === 'google' ? 'Google 帳號' : '電子郵件帳號'].filter(Boolean).join(' · ')))),
             syncLine,
+            publicNameRow(),
             h('div', { class: 'btn-row' }, syncBtn,
               h('button', { type: 'button', class: 'btn btn-secondary', onclick: () => C.signOut() }, icon('logout', 18), '登出')),
             h('div', { class: 'setting-row account-danger' },

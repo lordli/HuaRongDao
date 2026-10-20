@@ -11,6 +11,7 @@
       "deploy/**",
       "dist/**",
       "firestore.rules",
+      "firestore.indexes.json",
       "package.json",
       "README.md",
       "DEPLOY.md",
@@ -47,6 +48,7 @@
     ]
   },
   "firestore": {
-    "rules": "firestore.rules"
+    "rules": "firestore.rules",
+    "indexes": "firestore.indexes.json"
   }
 }

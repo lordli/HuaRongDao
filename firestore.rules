@@ -4,6 +4,7 @@ rules_version = '2';
 // users/{uid}：每位玩家自己的資料（整份存成 JSON 字串，合併在瀏覽器裡做，見 js/store.js、js/cloud.js）。
 // levels/{id}：關卡廣場。id 由盤面算出來，同一個盤面只能發佈一次（見 js/gallery.js）。
 //   讚、過關人數、檢舉次數都是計數欄位，只能跟著對應的文件一起 +1／-1，不能直接改。
+// players/{uid}、boards/{關卡}/records/{uid}：排行榜（見 js/ranking.js）。
 service cloud.firestore {
   match /databases/{database}/documents {
     function signedIn() { return request.auth != null; }
@@ -76,6 +77,78 @@ service cloud.firestore {
           && request.resource.data.steps <= resource.data.steps;
         allow delete: if isAuthor();
       }
+    }
+
+    // ---- 內建關卡的最少步數：由 tools/sync-rules.js 依 js/levels.js 產生，不要手改 ----
+    function builtinMin() {
+      return {
+        'chuchu': 6, 'qibu': 7, 'xiaoshi': 9, 'yixin': 11, 'kailu': 13, 'haikuo': 13,
+        'kongming': 16, 'chulu': 17, 'yaoqi': 17, 'gaozhen': 17, 'xuri': 18, 'huanwei': 19,
+        'jianru': 21, 'sanqi': 21, 'quanmin': 22, 'zuoyoufeng': 25, 'hengxing': 28, 'jiaren': 28,
+        'xushi': 32, 'haiyan': 32, 'qianli': 33, 'weibu': 36, 'chouliang': 37, 'yuhui': 38,
+        'zhongzhi': 41, 'huoshao': 41, 'taoyuan': 43, 'muniu': 44, 'kongrong': 47, 'liuan': 48,
+        'changshe': 50, 'xingluo': 50, 'jugong': 55, 'sanying': 57, 'yifu': 64, 'dayi': 66,
+        'shanqiong': 70, 'siyuan': 15, 'shenxian': 21, 'qianhu': 22, 'biyi': 28, 'jiezu': 32,
+        'wuguan': 34, 'binglin': 34, 'wujiang': 36, 'shunfeng': 39, 'lianguan': 39, 'dusai': 40,
+        'qiandang': 42, 'yusheng': 47, 'bingwei': 52, 'zuoyou': 54, 'beishui': 54, 'simian': 56,
+        'jinjun': 58, 'qitou': 60, 'weier': 62, 'chachi': 62, 'chachi2': 63, 'sanjun': 65,
+        'sijie': 66, 'jingdi': 68, 'zhihui': 70, 'taohua': 70, 'tunbing': 71, 'bingfen': 72,
+        'jiangyong': 72, 'shuangjiang': 73, 'jiadao': 75, 'silu': 77, 'shuixie': 79, 'hengdao': 81,
+        'shoukou1': 81, 'yunzhe': 81, 'hengma': 83, 'luanshi': 84, 'bingdang': 87, 'rudi': 87,
+        'diezhang': 98, 'zhichi': 98, 'shoukou2': 99, 'shefang1': 102, 'wengzhong': 103, 'shefang2': 120,
+        'fenghui': 138, 'shibabu': 18, 'ziluolan': 27, 'chuju': 28, 'sansejin': 28, 'yingsu': 40,
+        'xuehualian': 46, 'jinqi': 59, 'yixian': 36, 'dongmen': 46, 'beimen': 53, 'xichu': 55,
+        'sangu': 80, 'bazhen': 80, 'shangwu': 82, 'yiyi': 83, 'zhuge': 88, 'andu': 99,
+        'cengluan': 105, 'chengxiang': 113, 'shimian': 114, 'tanlu': 135
+      };
+    }
+    // ---- 以上由 tools/sync-rules.js 產生 ----
+
+    // 星等：最少步數內 3 星，1.5 倍（無條件進位）內 2 星，其他 1 星（排行榜只收沒用提示的成績）
+    function starsOf(steps, min) { return steps <= min ? 3 : (2 * steps <= 3 * min + 1 ? 2 : 1); }
+
+    // 排行榜的總成績：每位玩家一份。星星和過關數只能跟著某一關的紀錄（last）一起變，
+    // 而且要跟那一筆紀錄寫入前後的差距對得上。
+    match /players/{uid} {
+      function rec(lv) { return /databases/$(database)/documents/boards/$(lv)/records/$(uid); }
+      function base(f) { return resource == null ? 0 : resource.data[f]; }
+      function counted(d) {
+        let mins = builtinMin();
+        let had = exists(rec(d.last));
+        return d.last is string && d.last in mins && existsAfter(rec(d.last))
+          && d.cleared == base('cleared') + (had ? 0 : 1)
+          && d.stars == base('stars') + starsOf(getAfter(rec(d.last)).data.steps, mins[d.last])
+               - (had ? starsOf(get(rec(d.last)).data.steps, mins[d.last]) : 0);
+      }
+      allow read: if true;
+      allow create, update: if signedIn() && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(['name', 'stars', 'cleared', 'score', 'last', 'updatedAt'])
+        && str(request.resource.data.name, 1, 20)
+        && request.resource.data.score == request.resource.data.stars * 1000 + request.resource.data.cleared
+        && request.resource.data.updatedAt == request.time
+        && ((resource != null && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name', 'updatedAt']))
+          || counted(request.resource.data));
+    }
+
+    // 內建關卡的每關紀錄：每人一筆，只能換成更好的；步數不能少於最少步數，
+    // 走法（每步 3 個字）要跟步數對得上，總成績要在同一批寫入裡一起更新。
+    match /boards/{lv}/records/{uid} {
+      function valid(d) {
+        let mins = builtinMin();
+        let player = getAfter(/databases/$(database)/documents/players/$(uid)).data;
+        return lv in mins
+          && d.keys().hasOnly(['name', 'steps', 'timeMs', 'moves', 'at'])
+          && str(d.name, 1, 20) && num(d.steps, mins[lv], 9999)
+          && num(d.timeMs, d.steps * 200, 86400000)
+          && d.moves is string && d.moves.size() == d.steps * 3
+          && d.at == request.time
+          && player.last == lv && player.updatedAt == request.time;
+      }
+      allow read: if true;
+      allow create: if signedIn() && request.auth.uid == uid && valid(request.resource.data);
+      allow update: if signedIn() && request.auth.uid == uid && valid(request.resource.data)
+        && (request.resource.data.steps < resource.data.steps
+          || (request.resource.data.steps == resource.data.steps && request.resource.data.timeMs < resource.data.timeMs));
     }
 
     // 檢舉：每人對每一關一份，只有管理者在 Firebase 主控台看得到

@@ -8,3 +8,8 @@ node_modules/
 .firebase-auth.json
 .auth-enabled-*
 *-debug.log
+
+# 部署金鑰（只放在環境變數，不要進 repo）
+*-key.json
+*-key.b64.txt
+sa.json
