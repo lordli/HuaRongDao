@@ -1,0 +1,92 @@
+rules_version = '2';
+
+// 華容道的 Firestore 規則。
+// users/{uid}：每位玩家自己的資料（整份存成 JSON 字串，合併在瀏覽器裡做，見 js/store.js、js/cloud.js）。
+// levels/{id}：關卡廣場。id 由盤面算出來，同一個盤面只能發佈一次（見 js/gallery.js）。
+//   讚、過關人數、檢舉次數都是計數欄位，只能跟著對應的文件一起 +1／-1，不能直接改。
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() { return request.auth != null; }
+    function str(v, lo, hi) { return v is string && v.size() >= lo && v.size() <= hi; }
+    function num(v, lo, hi) { return v is int && v >= lo && v <= hi; }
+
+    match /users/{uid} {
+      allow read, delete: if signedIn() && request.auth.uid == uid;
+      allow create, update: if signedIn() && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(['v', 'json', 'updatedAt'])
+        && request.resource.data.json is string
+        && request.resource.data.json.size() < 700000
+        && request.resource.data.updatedAt == request.time;
+    }
+
+    match /levels/{id} {
+      function level() { return get(/databases/$(database)/documents/levels/$(id)).data; }
+      function levelAfter() { return getAfter(/databases/$(database)/documents/levels/$(id)).data; }
+      function isAuthor() { return signedIn() && level().authorUid == request.auth.uid; }
+      function content(d) {
+        return str(d.code, 10, 400) && str(d.name, 1, 30) && str(d.description, 0, 200)
+          && str(d.authorName, 1, 20) && num(d.cols, 3, 6) && num(d.rows, 4, 7)
+          && num(d.minMoves, 1, 999) && num(d.difficulty, 1, 5);
+      }
+      function changed() { return request.resource.data.diff(resource.data).affectedKeys(); }
+      // 計數欄位只能變 1，而且同一批寫入裡要有對應的文件出現（或消失）
+      function counted(field, path, down) {
+        return changed().hasOnly([field]) && (
+          (request.resource.data[field] == resource.data[field] + 1 && !exists(path) && existsAfter(path))
+          || (down && request.resource.data[field] == resource.data[field] - 1 && exists(path) && !existsAfter(path)));
+      }
+
+      allow read: if true;
+      allow create: if signedIn()
+        && request.resource.data.keys().hasOnly(['code', 'name', 'description', 'authorUid', 'authorName', 'cols', 'rows',
+             'minMoves', 'difficulty', 'likes', 'clears', 'reports', 'createdAt', 'updatedAt'])
+        && content(request.resource.data)
+        && request.resource.data.authorUid == request.auth.uid
+        && request.resource.data.likes == 0 && request.resource.data.clears == 0 && request.resource.data.reports == 0
+        && request.resource.data.createdAt == request.time && request.resource.data.updatedAt == request.time;
+      allow update: if signedIn() && (
+        (resource.data.authorUid == request.auth.uid
+          && changed().hasOnly(['code', 'name', 'description', 'authorName', 'difficulty', 'updatedAt'])
+          && content(request.resource.data) && request.resource.data.updatedAt == request.time)
+        || counted('likes', /databases/$(database)/documents/levels/$(id)/likes/$(request.auth.uid), true)
+        || counted('clears', /databases/$(database)/documents/levels/$(id)/records/$(request.auth.uid), false)
+        || counted('reports', /databases/$(database)/documents/reports/$(id + '_' + request.auth.uid), false));
+      allow delete: if signedIn() && resource.data.authorUid == request.auth.uid;
+
+      // 按讚：每人一份，只有自己和作者看得到
+      match /likes/{uid} {
+        allow read: if signedIn() && (request.auth.uid == uid || isAuthor());
+        allow create: if signedIn() && request.auth.uid == uid
+          && request.resource.data.keys().hasOnly(['at']) && request.resource.data.at == request.time
+          && levelAfter().likes == level().likes + 1;
+        allow delete: if signedIn() && ((request.auth.uid == uid && levelAfter().likes == level().likes - 1) || isAuthor());
+      }
+
+      // 過關紀錄：每人一份，只能換成更好的成績；步數不能少於這一關的最少步數
+      match /records/{uid} {
+        function valid(d) {
+          return d.keys().hasOnly(['name', 'steps', 'timeMs', 'hints', 'at']) && str(d.name, 1, 20)
+            && num(d.steps, level().minMoves, 9999) && num(d.timeMs, 0, 86400000) && num(d.hints, 0, 999)
+            && d.at == request.time;
+        }
+        allow read: if true;
+        allow create: if signedIn() && request.auth.uid == uid && valid(request.resource.data)
+          && levelAfter().clears == level().clears + 1;
+        allow update: if signedIn() && request.auth.uid == uid && valid(request.resource.data)
+          && request.resource.data.steps <= resource.data.steps;
+        allow delete: if isAuthor();
+      }
+    }
+
+    // 檢舉：每人對每一關一份，只有管理者在 Firebase 主控台看得到
+    match /reports/{rid} {
+      allow create: if signedIn()
+        && rid == request.resource.data.level + '_' + request.auth.uid
+        && request.resource.data.keys().hasOnly(['level', 'reason', 'at'])
+        && str(request.resource.data.level, 1, 40) && str(request.resource.data.reason, 0, 200)
+        && request.resource.data.at == request.time
+        && getAfter(/databases/$(database)/documents/levels/$(request.resource.data.level)).data.reports
+          == get(/databases/$(database)/documents/levels/$(request.resource.data.level)).data.reports + 1;
+    }
+  }
+}

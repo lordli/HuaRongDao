@@ -1,0 +1,10 @@
+# 建置產物、打包檔
+dist/
+*.zip
+node_modules/
+
+# Firebase CLI 部署時產生的暫存檔
+.firebase/
+.firebase-auth.json
+.auth-enabled-*
+*-debug.log

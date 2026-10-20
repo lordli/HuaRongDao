@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="zh-Hant-TW">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>華容道</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 64 64%27%3E%3Crect width=%2764%27 height=%2764%27 rx=%2714%27 fill=%27%23B23A2A%27/%3E%3Ctext x=%2732%27 y=%2745%27 font-size=%2738%27 text-anchor=%27middle%27 fill=%27%23FFF6EE%27 font-family=%27serif%27 font-weight=%27900%27%3E%E8%8F%AF%3C/text%3E%3C/svg%3E">
+<meta name="description" content="在瀏覽器玩華容道：內建經典開局，也能自己設計關卡、檢查能不能解並儲存。">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&amp;family=Noto+Serif+TC:wght@700;900&amp;display=swap">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<a class="skip-link" href="#main">跳到主要內容</a>
+<header class="site-header">
+  <div class="header-inner">
+    <a class="brand" href="#/"><span class="brand-seal" aria-hidden="true">華</span><span class="brand-name">華容道</span></a>
+    <nav class="main-nav" aria-label="主選單">
+      <a href="#/" data-nav="home">關卡</a>
+      <a href="#/gallery" data-nav="gallery" id="nav-gallery" hidden><span class="nav-long">關卡廣場</span><span class="nav-short">廣場</span></a>
+      <a href="#/mine" data-nav="mine"><span class="nav-long">我的關卡</span><span class="nav-short">我的</span></a>
+      <a href="#/edit/new" data-nav="edit"><span class="nav-long">關卡編輯器</span><span class="nav-short">編輯器</span></a>
+    </nav>
+    <div class="header-actions">
+      <button type="button" class="btn btn-secondary btn-sm header-signin" id="header-signin" hidden>登入</button>
+      <a class="icon-btn header-settings" href="#/settings" data-nav="settings" aria-label="設定" title="設定"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 4h-7"></path><path d="M10 4H3"></path><path d="M21 12h-9"></path><path d="M8 12H3"></path><path d="M21 20h-5"></path><path d="M12 20H3"></path><path d="M14 2v4"></path><path d="M8 10v4"></path><path d="M16 18v4"></path></svg></a>
+    </div>
+  </div>
+</header>
+<main id="main" class="site-main" tabindex="-1">
+  <noscript><p class="page">這個遊戲需要開啟 JavaScript 才能玩。</p></noscript>
+</main>
+<footer class="site-footer">
+  <div class="footer-inner">
+    <p id="storage-note"></p>
+    <p>規則：棋子只能上下左右滑進空格，把曹操移到出口就過關。同一顆棋子連續移動只算 1 步。</p>
+  </div>
+</footer>
+<script src="js/engine.js"></script>
+<script src="js/levels.js"></script>
+<script src="js/share.js"></script>
+<script src="js/store.js"></script>
+<script src="js/settings.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/cloud-config.js"></script>
+<script src="js/cloud.js"></script>
+<script src="js/gallery.js"></script>
+<script src="js/sound.js"></script>
+<script src="js/board.js"></script>
+<script src="js/scorecard.js"></script>
+<script src="js/io.js"></script>
+<script src="js/views/home.js"></script>
+<script src="js/views/play.js"></script>
+<script src="js/views/editor.js"></script>
+<script src="js/views/mine.js"></script>
+<script src="js/views/shared.js"></script>
+<script src="js/views/settings.js"></script>
+<script src="js/views/gallery.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
