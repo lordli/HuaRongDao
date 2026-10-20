@@ -21,7 +21,7 @@ It is a static, front-end-only website: no server of your own and no build step.
 | --- | --- |
 | Game | 4 × 5 board; drag, tap (moves right away when there is only one direction), yellow arrows, arrow keys; move counter (moving the same piece again counts as one move), timer, undo, redo, restart |
 | Hints and auto-solve | A solver finds the shortest solution on the fly; a hint shows where the next piece should go |
-| Built-in levels | 106 levels: Beginner 16, Intermediate 21, Classic 48 (traditional layouts such as 橫刀立馬, 將擁曹營, 峰迴路轉), International 7 (Daisy, Pennant Puzzle and others), Variants 4, Challenge 10; sorted by fewest moves within each category, every minimum verified by the solver; category tabs show counts, and you can show only unsolved levels |
+| Built-in levels | 106 levels: Beginner 16, Intermediate 21, Classic 48 (traditional layouts such as 橫刀立馬, 將擁曹營, 峰迴路轉), International 7 (Daisy, Pennant Puzzle and others), Variants 4, Challenge 10; sorted by fewest moves within each category, every minimum verified by the solver; category tabs show counts, and you can show only unsolved levels; the list is paginated (a few full rows per page depending on screen width, 2 × 4 on phones), remembers your page, and opens at the first unsolved level |
 | Clearing a level | Moves, time, stars (3 stars at the minimum, 2 within 1.5×; using 1–2 hints caps at 2 stars, 3 or more at 1 star), best records, next level |
 | Progress | The current game is saved automatically; the home page offers "continue" |
 | Level editor | Place the four piece types, drag, delete, mirror, clear, undo/redo, rename pieces, start from a built-in level; live check with the minimum number of moves; test play before saving; warns about unsaved changes |

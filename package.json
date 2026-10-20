@@ -1,6 +1,6 @@
 {
   "name": "huarongdao",
-  "version": "0.7.0",
+  "version": "0.7.1",
   "description": "華容道網頁遊戲：內建關卡、關卡編輯器、儲存與匯出匯入",
   "private": true,
   "scripts": {

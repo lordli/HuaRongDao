@@ -877,3 +877,24 @@ html[lang="en"] .ghost-tall, html[lang="en"] .ghost-wide { font-size: calc(var(-
 html[lang="en"] .ghost-soldier { font-size: calc(var(--u) * 0.17); }
 html[lang="en"] .piece-label { overflow-wrap: anywhere; text-align: center; }
 html[lang="en"] .brand-name, html[lang="en"] .lead-title, html[lang="en"] .play-title, html[lang="en"] .card-name { letter-spacing: 0.01em; }
+
+/* ---------- 分頁 ---------- */
+.pager { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 6px; }
+.pager-btn {
+  min-width: 44px; height: 44px; padding: 0 10px; border-radius: 10px; border: 1px solid var(--line-strong);
+  background: var(--surface); color: var(--ink); font-weight: 500; font-variant-numeric: tabular-nums;
+  display: inline-flex; align-items: center; justify-content: center; cursor: pointer;
+}
+.pager-btn:hover:not(:disabled) { background: var(--surface-2); }
+.pager-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+.pager-btn[aria-current="page"] { background: var(--ink); color: var(--bg); border-color: var(--ink); font-weight: 700; }
+.pager-gap { min-width: 20px; text-align: center; color: var(--muted); }
+.pager-status { min-width: 5.5em; text-align: center; color: var(--muted); font-variant-numeric: tabular-nums; }
+.pager:not(.pager-compact) .pager-status { display: none; }
+.levels > .pager:last-child { margin-top: 4px; }
+@media (max-width: 560px) {
+  /* 手機：頁碼太多放不下，完整版也只留上一頁、「2 / 9」、下一頁 */
+  .pager .pager-num, .pager .pager-gap { display: none; }
+  .pager:not(.pager-compact) .pager-status { display: inline; }
+  .levels .section-head { align-items: center; }
+}

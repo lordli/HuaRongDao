@@ -161,6 +161,39 @@
     });
   }
 
+  /* ---------- 分頁 ---------- */
+  /* 要顯示的頁碼：第一頁、最後一頁、目前這頁和前後各一頁，中間跳過的用 null（顯示「…」） */
+  function pageNumbers(page, pages) {
+    const keep = [...new Set([0, pages - 1, page - 1, page, page + 1])].filter((n) => n >= 0 && n < pages).sort((a, b) => a - b);
+    const out = [];
+    keep.forEach((n, i) => {
+      const gap = i ? n - keep[i - 1] : 1;
+      if (gap === 2) out.push(n - 1);
+      else if (gap > 2) out.push(null);
+      out.push(n);
+    });
+    return out;
+  }
+
+  /*
+   * 分頁列：‹ 1 … 4 5 6 … 9 ›。page 從 0 起算；onGo(要去的頁)。
+   * compact：只有上一頁、「2 / 9」、下一頁（手機上完整版也會自動變成這樣）。
+   */
+  function pager(page, pages, onGo, compact) {
+    const nav = h('nav', { class: 'pager' + (compact ? ' pager-compact' : ''), 'aria-label': t('頁碼') });
+    if (pages <= 1) { nav.hidden = true; return nav; }
+    const go = (n) => () => onGo(Math.max(0, Math.min(pages - 1, n)));
+    nav.appendChild(h('button', { type: 'button', class: 'pager-btn pager-prev', 'aria-label': t('上一頁'), disabled: page === 0, onclick: go(page - 1) }, icon('back', 18)));
+    if (!compact) {
+      pageNumbers(page, pages).forEach((n) => nav.appendChild(n === null
+        ? h('span', { class: 'pager-gap', 'aria-hidden': 'true' }, '…')
+        : h('button', { type: 'button', class: 'pager-btn pager-num', 'aria-label': t('第 {page} 頁', { page: n + 1 }), 'aria-current': n === page ? 'page' : null, onclick: go(n) }, String(n + 1))));
+    }
+    nav.appendChild(h('span', { class: 'pager-status' }, t('第 {page} / {pages} 頁', { page: page + 1, pages })));
+    nav.appendChild(h('button', { type: 'button', class: 'pager-btn pager-next', 'aria-label': t('下一頁'), disabled: page >= pages - 1, onclick: go(page + 1) }, icon('next', 18)));
+    return nav;
+  }
+
   function confirmDialog(title, message, okLabel, danger) {
     return dialog({
       title: title,
@@ -231,5 +264,5 @@
   }
 
   const HRD = root.HRD || (root.HRD = {});
-  HRD.ui = { h, icon, toast, dialog, confirmDialog, copyText, saveFile, formatTime, formatDate };
+  HRD.ui = { h, icon, toast, dialog, confirmDialog, pager, pageNumbers, copyText, saveFile, formatTime, formatDate };
 })(typeof window !== 'undefined' ? window : globalThis);

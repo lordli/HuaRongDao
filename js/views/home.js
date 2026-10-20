@@ -107,14 +107,42 @@
     const unsolvedOnly = h('input', { type: 'checkbox', class: 'switch', id: 'home-unsolved', checked: !!app.state.homeUnsolved });
     unsolvedOnly.addEventListener('change', () => { app.state.homeUnsolved = unsolvedOnly.checked; drawGrid(); });
 
-    function drawGrid() {
-      grid.textContent = '';
-      const shown = levels.filter((l) => (filter === 'all' || l.category === filter) && !(unsolvedOnly.checked && isSolved(l)));
-      shown.forEach((l) => grid.appendChild(levelCard(l)));
-      if (!shown.length) grid.appendChild(h('p', { class: 'empty-line' }, t('這個分類全部過關了，太厲害了！')));
-      tabs.querySelectorAll('.tab').forEach((tt) => tt.setAttribute('aria-pressed', tt.dataset.id === filter ? 'true' : 'false'));
+    /*
+     * 分頁：一頁放滿幾排（手機 2 欄 × 4 排、其他 3 排），欄數跟著畫面寬度。
+     * 記住每個分類看到哪一關（換頁大小時也能停在同一個位置）；第一次打開跳到第一個還沒過的關卡。
+     */
+    const seen = app.state.homeSeen || (app.state.homeSeen = {});
+    let pageSize = 15;
+    let topPager = h('nav', { hidden: true });
+    let bottomPager = h('nav', { hidden: true });
+    const levelsSection = h('section', { class: 'levels', 'aria-labelledby': 'levels-title' });
+    const listKey = () => filter + (unsolvedOnly.checked ? ':unsolved' : '');
+    function measure() {
+      const cols = getComputedStyle(grid).gridTemplateColumns.split(' ').filter(Boolean).length || 1;
+      return cols * (cols <= 2 ? 4 : 3);
     }
-    drawGrid();
+
+    function drawGrid(scroll) {
+      const shown = levels.filter((l) => (filter === 'all' || l.category === filter) && !(unsolvedOnly.checked && isSolved(l)));
+      const pages = Math.max(1, Math.ceil(shown.length / pageSize));
+      let first = seen[listKey()];
+      if (first == null) first = Math.max(0, shown.findIndex((l) => !isSolved(l)));
+      const page = Math.min(Math.floor(first / pageSize), pages - 1);
+      seen[listKey()] = page * pageSize;
+      grid.textContent = '';
+      shown.slice(page * pageSize, (page + 1) * pageSize).forEach((l) => grid.appendChild(levelCard(l)));
+      if (!shown.length) grid.appendChild(h('p', { class: 'empty-line' }, t('這個分類全部過關了，太厲害了！')));
+      const go = (fromBottom) => (n) => { seen[listKey()] = n * pageSize; drawGrid(fromBottom); };
+      topPager.replaceWith(topPager = HRD.ui.pager(page, pages, go(false), true));
+      bottomPager.replaceWith(bottomPager = HRD.ui.pager(page, pages, go(true)));
+      tabs.querySelectorAll('.tab').forEach((tt) => tt.setAttribute('aria-pressed', tt.dataset.id === filter ? 'true' : 'false'));
+      if (scroll) {
+        // 從下面的分頁列換頁：捲回關卡列表的開頭，鍵盤焦點移到第一關
+        levelsSection.scrollIntoView({ block: 'start', behavior: HRD.settings.reduceMotion() ? 'auto' : 'smooth' });
+        const firstCard = grid.querySelector('a');
+        if (firstCard) firstCard.focus({ preventScroll: true });
+      }
+    }
 
     /* 有玩過、但還沒登入：提一下可以登入同步（可以關掉） */
     let nudge = null;
@@ -132,19 +160,31 @@
           }, icon('x', 20))));
     }
 
+    levelsSection.append(
+      h('div', { class: 'section-head' },
+        h('div', {},
+          h('h2', { id: 'levels-title', class: 'section-title' }, t('關卡')),
+          h('p', { class: 'section-sub' }, t('已過關 {n} / {n2} · 共 {starTotal} 顆星', { n: solved.length, n2: levels.length, starTotal }))),
+        topPager),
+      h('div', { class: 'levels-bar' }, tabs,
+        h('label', { class: 'switch-row', for: 'home-unsolved' }, unsolvedOnly, h('span', {}, t('只看還沒過關的')))),
+      grid,
+      bottomPager);
     container.appendChild(h('div', { class: 'page home-page' },
       h('div', { class: 'home-top' }, lead, create),
       nudge,
-      h('section', { class: 'levels', 'aria-labelledby': 'levels-title' },
-        h('div', { class: 'section-head' },
-          h('div', {},
-            h('h2', { id: 'levels-title', class: 'section-title' }, t('關卡')),
-            h('p', { class: 'section-sub' }, t('已過關 {n} / {n2} · 共 {starTotal} 顆星', { n: solved.length, n2: levels.length, starTotal })))),
-        h('div', { class: 'levels-bar' }, tabs,
-          h('label', { class: 'switch-row', for: 'home-unsolved' }, unsolvedOnly, h('span', {}, t('只看還沒過關的')))),
-        grid)));
+      levelsSection));
 
-    return null;
+    // 放進畫面之後才量得到一排幾欄
+    pageSize = measure();
+    drawGrid();
+    let resizeTimer = null;
+    const onResize = () => {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(() => { const size = measure(); if (size !== pageSize) { pageSize = size; drawGrid(); } }, 150);
+    };
+    root.addEventListener('resize', onResize);
+    return function unmount() { root.removeEventListener('resize', onResize); clearTimeout(resizeTimer); };
   }
 
   HRD.views = HRD.views || {};

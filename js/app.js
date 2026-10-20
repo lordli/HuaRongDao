@@ -10,7 +10,7 @@
   let current = null;
   let ignoreHash = null;
 
-  HRD.VERSION = '0.7.0';
+  HRD.VERSION = '0.7.1';
 
   const app = {
     state: {},
